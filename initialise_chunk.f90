@@ -37,7 +37,10 @@ SUBROUTINE initialise_chunk(chunk)
 
   ymin=grid%ymin+dy*float(chunks(chunk)%field%bottom-1)
 
-  CALL initialise_chunk_kernel(chunks(chunk)%field%x_min,    &
+
+  IF(use_cuda_kernels) THEN
+    !CALL initialise_chunk_kernel(chunks(chunk)%field%x_min,    &
+    CALL initialise_chunk_kernel_cuda(chunks(chunk)%field%x_min,    &
                                chunks(chunk)%field%x_max,    &
                                chunks(chunk)%field%y_min,    &
                                chunks(chunk)%field%y_max,    &
@@ -53,6 +56,23 @@ SUBROUTINE initialise_chunk(chunk)
                                chunks(chunk)%field%volume,   &
                                chunks(chunk)%field%xarea,    &
                                chunks(chunk)%field%yarea     )
-
+  ELSE
+    CALL initialise_chunk_kernel(chunks(chunk)%field%x_min,    &
+                               chunks(chunk)%field%x_max,    &
+                               chunks(chunk)%field%y_min,    &
+                               chunks(chunk)%field%y_max,    &
+                               xmin,ymin,dx,dy,              &
+                               chunks(chunk)%field%vertexx,  &
+                               chunks(chunk)%field%vertexdx, &
+                               chunks(chunk)%field%vertexy,  &
+                               chunks(chunk)%field%vertexdy, &
+                               chunks(chunk)%field%cellx,    &
+                               chunks(chunk)%field%celldx,   &
+                               chunks(chunk)%field%celly,    &
+                               chunks(chunk)%field%celldy,   &
+                               chunks(chunk)%field%volume,   &
+                               chunks(chunk)%field%xarea,    &
+                               chunks(chunk)%field%yarea     )
+  ENDIF
 
 END SUBROUTINE initialise_chunk

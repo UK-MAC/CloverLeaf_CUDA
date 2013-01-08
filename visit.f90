@@ -2,38 +2,36 @@
 !
 ! This file is part of CloverLeaf.
 !
-! CloverLeaf is free software: you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the 
-! Free Software Foundation, either version 3 of the License, or (at your option) 
-! any later version.
+! CloverLeaf is free software: you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation, either version 3 of the License, or (at your option) any later
+! version.
 !
-! CloverLeaf is distributed in the hope that it will be useful, but 
-! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
-! details.
+! CloverLeaf is distributed in the hope that it will be useful, but WITHOUT ANY
+! WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+! A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 !
-! You should have received a copy of the GNU General Public License along with 
+! You should have received a copy of the GNU General Public License along with
 ! CloverLeaf. If not, see http://www.gnu.org/licenses/.
 
-!>  @brief Generates graphics output files.
-!>  @author Wayne Gaudin
-!>  @details The field data over all mesh chunks is written to a .vtk files and
-!>  the .visit file is written that defines the time for each set of vtk files.
-!>  The ideal gas and viscosity routines are invoked to make sure this data is
-!>  up to data with the current energy, density and velocity.
+!>  @brief Generates graphics output files.  >  @author Wayne Gaudin >  @details
+!The field data over all mesh chunks is written to a .vtk files and >  the
+!.visit file is written that defines the time for each set of vtk files.  >  The
+!ideal gas and viscosity routines are invoked to make sure this data is >  up to
+!data with the current energy, density and velocity.
 
 SUBROUTINE visit
 
-  USE clover_module
+  USE clover_module 
   USE update_halo_module
   USE viscosity_module
   USE ideal_gas_module
 
   IMPLICIT NONE
 
-  INTEGER :: j,k,c,err,get_unit,u,dummy
+  INTEGER :: i,j,k,c,l,err,get_unit,u,dummy
   INTEGER :: nxc,nyc,nxv,nyv,nblocks
-  REAL(KIND=8)    :: temp_var
+  REAL(KIND=8)    :: t0,vx,vy,temp_var
 
   CHARACTER(len=80)           :: name
   CHARACTER(len=10)           :: chunk_name,step_name

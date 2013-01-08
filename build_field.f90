@@ -34,6 +34,22 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    chunks(chunk)%field%x_max=x_cells
    chunks(chunk)%field%y_max=y_cells
 
+   IF(use_cuda_kernels) THEN
+       CALL initialise_cuda(chunks(chunk)%field%x_min,  &
+                            chunks(chunk)%field%x_max,  &
+                            chunks(chunk)%field%y_min,  &
+                            chunks(chunk)%field%y_max,  &
+                            chunks(chunk)%field%left,   &
+                            chunks(chunk)%field%right,  &
+                            chunks(chunk)%field%top,    &
+                            chunks(chunk)%field%bottom, &
+                            chunks(chunk)%field%left_boundary,  &
+                            chunks(chunk)%field%right_boundary, &
+                            chunks(chunk)%field%top_boundary,   &
+                            chunks(chunk)%field%bottom_boundary,    &
+                            chunks(chunk)%task)
+   ELSE 
+
    ALLOCATE(chunks(chunk)%field%density0  (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
                    chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
    ALLOCATE(chunks(chunk)%field%density1  (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
@@ -96,5 +112,6 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
                                          chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
    ALLOCATE(chunks(chunk)%field%yarea   (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
                                          chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
+   ENDIF
 
 END SUBROUTINE build_field

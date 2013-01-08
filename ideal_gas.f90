@@ -38,6 +38,17 @@ SUBROUTINE ideal_gas(chunk,predict)
   IF(chunks(chunk)%task .EQ. parallel%task) THEN
 
     IF(.NOT.predict) THEN
+      IF(use_CUDA_kernels)THEN
+        CALL ideal_gas_kernel_cuda(chunks(chunk)%field%x_min,    &
+                            chunks(chunk)%field%x_max,      &
+                            chunks(chunk)%field%y_min,      &
+                            chunks(chunk)%field%y_max,      &
+                            predict, &
+                            chunks(chunk)%field%density0,   &
+                            chunks(chunk)%field%energy0,    &
+                            chunks(chunk)%field%pressure,   &
+                            chunks(chunk)%field%soundspeed  )
+      ELSE  &
       IF(use_fortran_kernels)THEN
         CALL ideal_gas_kernel(chunks(chunk)%field%x_min,    &
                             chunks(chunk)%field%x_max,      &
@@ -58,6 +69,17 @@ SUBROUTINE ideal_gas(chunk,predict)
                             chunks(chunk)%field%soundspeed  )
       ENDIF
     ELSE
+      IF(use_CUDA_kernels)THEN
+        CALL ideal_gas_kernel_cuda(chunks(chunk)%field%x_min,    &
+                            chunks(chunk)%field%x_max,      &
+                            chunks(chunk)%field%y_min,      &
+                            chunks(chunk)%field%y_max,      &
+                            predict, &
+                            chunks(chunk)%field%density1,   &
+                            chunks(chunk)%field%energy1,    &
+                            chunks(chunk)%field%pressure,   &
+                            chunks(chunk)%field%soundspeed  )
+      ELSE  &
       IF(use_fortran_kernels)THEN
         CALL ideal_gas_kernel(chunks(chunk)%field%x_min,    &
                             chunks(chunk)%field%x_max,      &

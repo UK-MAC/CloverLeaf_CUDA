@@ -34,6 +34,7 @@ MODULE clover_module
   USE data_module
   USE definitions_module
   USE MPI
+  USE cufor_mpi_mod
 
   IMPLICIT NONE
 
@@ -114,10 +115,10 @@ SUBROUTINE clover_decompose(x_cells,y_cells,left,right,bottom,top)
 
   IMPLICIT NONE
 
-  INTEGER :: x_cells,y_cells,left(:),right(:),top(:),bottom(:)
+  INTEGER :: x_cells,y_cells,left(:),right(:),top(:),bottom(:),dims(2)
   INTEGER :: c,delta_x,delta_y
 
-  REAL(KIND=8) :: mesh_ratio,factor_x,factor_y
+  REAL(KIND=8) :: mesh_ratio,a,b,factor_x,factor_y
   INTEGER  :: chunk_x,chunk_y,mod_x,mod_y,split_found
 
   INTEGER  :: cx,cy,chunk,add_x,add_y,add_x_prev,add_y_prev
@@ -237,6 +238,18 @@ SUBROUTINE clover_exchange(fields,depth)
   ! Also, not packing all fields for each communication, doing one at a time
 
   IF(fields(FIELD_DENSITY0).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_DENSITY0,      &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%density0,      &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -247,9 +260,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,CELL_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_DENSITY1).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_DENSITY1,      &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%density1,      &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -260,9 +286,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,CELL_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_ENERGY0).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_ENERGY0,       &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%energy0,       &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -273,9 +312,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,CELL_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_ENERGY1).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_ENERGY1,       &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%energy1,       &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -286,9 +338,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,CELL_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_PRESSURE).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_PRESSURE,      &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%pressure,      &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -299,9 +364,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,CELL_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_VISCOSITY).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_VISCOSITY,     &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%viscosity,     &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -312,9 +390,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,CELL_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_SOUNDSPEED).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_SOUNDSPEED,    &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%soundspeed,    &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -325,9 +416,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,CELL_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_XVEL0).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_XVEL0,         &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,VERTEX_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%xvel0,         &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -338,9 +442,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,VERTEX_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_XVEL1).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_XVEL1,         &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,VERTEX_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%xvel1,         &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -351,9 +468,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,VERTEX_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_YVEL0).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_YVEL0,         &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,VERTEX_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%yvel0,         &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -364,9 +494,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,VERTEX_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_YVEL1).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_YVEL1,         &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,VERTEX_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%yvel1,         &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -377,9 +520,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,VERTEX_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_VOL_FLUX_X).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_VOL_FLUX_X,    &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,X_FACE_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%vol_flux_x,    &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -390,9 +546,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,X_FACE_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_VOL_FLUX_Y).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_VOL_FLUX_Y,    &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,Y_FACE_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%vol_flux_y,    &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -403,9 +572,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,Y_FACE_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_MASS_FLUX_X).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_MASS_FLUX_X,   &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,X_FACE_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%mass_flux_x,   &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -416,9 +598,22 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,X_FACE_DATA)
+    endif
   ENDIF
 
   IF(fields(FIELD_MASS_FLUX_Y).EQ.1) THEN
+    if(use_cuda_kernels) then
+    CALL cufor_mpi_interop(parallel%task+1,FIELD_MASS_FLUX_Y,   &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,Y_FACE_DATA)
+    else
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%mass_flux_y,   &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
@@ -429,6 +624,7 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,Y_FACE_DATA)
+    endif
   ENDIF
 
 
@@ -453,7 +649,7 @@ SUBROUTINE clover_exchange_message(chunk,field,                            &
 
   INTEGER      :: chunk,depth,field_type
 
-  INTEGER      :: size,err,request(8),tag,message_count,j,k,x_inc,y_inc,index
+  INTEGER      :: size,err,target,request(8),tag,message_count,j,k,x_inc,y_inc,index
   INTEGER      :: status(MPI_STATUS_SIZE,8)
   INTEGER      :: receiver,sender
 

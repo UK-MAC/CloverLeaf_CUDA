@@ -33,7 +33,7 @@ SUBROUTINE read_input()
 
   CHARACTER(LEN=500) :: word
 
-  test_problem=0
+  CHARACTER(LEN=500) :: string
 
   state_max=0
 
@@ -47,7 +47,6 @@ SUBROUTINE read_input()
 
   end_time=10.0
   end_step=g_ibig
-  complete=.FALSE.
 
   visit_frequency=0
   summary_frequency=10
@@ -64,6 +63,7 @@ SUBROUTINE read_input()
   use_fortran_kernels=.TRUE.
   use_C_kernels=.FALSE.
   use_OA_kernels=.FALSE.
+  use_CUDA_kernels=.FALSE.
   use_vector_loops=.FALSE.
 
   IF(parallel%boss)WRITE(g_out,*) 'Reading input file'
@@ -150,14 +150,22 @@ SUBROUTINE read_input()
         use_fortran_kernels=.TRUE.
         use_C_kernels=.FALSE.
         use_OA_kernels=.FALSE.
+        use_cuda_kernels=.FALSE.
       CASE('use_c_kernels')
         use_fortran_kernels=.FALSE.
         use_C_kernels=.TRUE.
         use_OA_kernels=.FALSE.
+        use_cuda_kernels=.FALSE.
       CASE('use_oa_kernels')
         use_fortran_kernels=.FALSE.
         use_C_kernels=.FALSE.
         use_OA_kernels=.TRUE.
+        use_cuda_kernels=.FALSE.
+      CASE('use_cuda_kernels')
+        use_cuda_kernels=.TRUE.
+        use_fortran_kernels=.TRUE.
+        use_C_kernels=.FALSE.
+        use_OA_kernels=.FALSE.
       CASE('use_vector_loops')
         use_vector_loops=.TRUE.
       CASE('test_problem')
@@ -229,7 +237,7 @@ SUBROUTINE read_input()
     ELSEIF(use_c_kernels) THEN
       WRITE(g_out,"(1x,a25)")'Using C Kernels'
     ELSEIF(use_oa_kernels) THEN
-      WRITE(g_out,"(1x,a25)")'Using OpenAcc Kernels'
+      WRITE(g_out,"(1x,a25)")'Using OpenACC Kernels'
     ENDIF
     WRITE(g_out,*)
     WRITE(g_out,*) 'Input read finished.'

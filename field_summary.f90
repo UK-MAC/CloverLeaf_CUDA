@@ -51,6 +51,20 @@ SUBROUTINE field_summary()
 
   DO c=1,number_of_chunks
     IF(chunks(c)%task.EQ.parallel%task) THEN
+      IF(use_CUDA_kernels)THEN
+        CALL field_summary_kernel_cuda(chunks(c)%field%x_min,              &
+                                  chunks(c)%field%x_max,                   &
+                                  chunks(c)%field%y_min,                   &
+                                  chunks(c)%field%y_max,                   &
+                                  chunks(c)%field%volume,                  &
+                                  chunks(c)%field%density0,                &
+                                  chunks(c)%field%energy0,                 &
+                                  chunks(c)%field%pressure,                &
+                                  chunks(c)%field%xvel0,                   &
+                                  chunks(c)%field%yvel0,                   &
+                                  vol,mass,ie,ke,press                     )
+      ELSE &
+      IF(use_fortran_kernels)THEN
       CALL field_summary_kernel(chunks(c)%field%x_min,                   &
                                 chunks(c)%field%x_max,                   &
                                 chunks(c)%field%y_min,                   &
@@ -62,6 +76,7 @@ SUBROUTINE field_summary()
                                 chunks(c)%field%xvel0,                   &
                                 chunks(c)%field%yvel0,                   &
                                 vol,mass,ie,ke,press                     )
+      ENDIF
     ENDIF
   ENDDO
 
