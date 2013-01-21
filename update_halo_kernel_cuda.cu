@@ -1,10 +1,8 @@
-// TODO some copies are negative, or copy form slightly different locations - look through and fix
-// change to use depth
-
 #include "ftocmacros.h"
 #include "cuda_common.cu"
 
 #include "chunk_cuda.cu"
+#include <cstdio>
 
 #define CHUNK_left          0
 #define CHUNK_right         1
@@ -13,245 +11,145 @@
 
 #define EXTERNAL_FACE       (-1)
 
-#define NUM_FIELDS          15
-
-extern CudaDevPtrStorage pointer_storage;
-
 extern CloverleafCudaChunk chunk;
-
-/*
-*   copies from the outer bit from [x_min, x_max] to the outer cells
-*/
 
 __global__ void device_update_halo_kernel_bottom_cuda
 (int x_min,int x_max,int y_min,int y_max,
-int x_extra, int y_extra,
-int x_invert, int y_invert,
+cell_info_t type,
 double* cur_array,
 int depth)
 {
-    __large_kernel_indexes;
-    // if its on the third row
-    /*
-    if(row == 2
-    && column > 0 && column < x_max+3+x_extra)
-    {
-        for(int ii = 0; ii < depth; ii++)
-        {
-            //FIXME 1+k for all the ones that have x extra or y extra
-            cur_array[THARR2D(0, -(1 + ii), x_extra)] = (y_invert?-1:1) * cur_array[THARR2D(0, 0, x_extra)];
-        }
-    }
-    */
+    int x_extra = type.x_e;
+    int y_extra = type.y_e;
+    int y_invert = type.y_i;
+    __kernel_indexes;
 
-    if(row == y_max)
+    // offset by 1 if it is anything but a CELL grid
+    int b_offset = (type.grid_type != CELL_DATA) ? 1 : 0;
+
+    if(column >= 2 - depth && column <= (x_max + 1) + x_extra + depth)
     {
-        cur_array[THARR2D(0, 0, x_extra)] = (y_invert?-1:1) * cur_array[THARR2D(0, -1, x_extra)];
-    }
-    else if(row == y_max + 1)
-    {
-        cur_array[THARR2D(0, 0, x_extra)] = (y_invert?-1:1) * cur_array[THARR2D(0, -3, x_extra)];
-    }
-    else if(row == y_max + 2)
-    {
-        cur_array[THARR2D(0, 0, x_extra)] = (y_invert?-1:1) * cur_array[THARR2D(0, -5, x_extra)];
+        if (row < depth)
+        {
+            const int offset = 2 + b_offset;
+
+            /*
+             * 1 - 2 * row means that row 0 services row 1, and vice versa
+             * this means that it can be dispatched with 'depth' rows only
+             */
+            cur_array[THARR2D(0, 1 - (2 * row), x_extra)] =
+                y_invert * cur_array[THARR2D(0, offset, x_extra)];
+        }
     }
 }
 
 __global__ void device_update_halo_kernel_top_cuda
 (int x_min,int x_max,int y_min,int y_max,
-int x_extra, int y_extra,
-int x_invert, int y_invert,
+cell_info_t type,
 double* cur_array,
 int depth)
 {
-    __large_kernel_indexes;
-    /*
-    // if on the third row from the bottom
-    if(row == y_max+1+y_extra
-    && column > 0 && column < x_max+3+x_extra)
-    {
-        for(int ii = 0; ii < depth; ii++)
-        {
-            cur_array[THARR2D(0, 1 + ii, x_extra)] = (y_invert?-1:1) * cur_array[THARR2D(0, 0, x_extra)];
-        }
-    }
-    */
+    int x_extra = type.x_e;
+    int y_extra = type.y_e;
+    int y_invert = type.y_i;
+    int x_face = type.x_f;
+    __kernel_indexes;
 
-    if(row == 3)
+    // if x face data, offset source/dest by - 1
+    int x_f_offset = (x_face) ? 1 : 0;
+
+    if(column >= 2 - depth && column <= (x_max + 1) + x_extra + depth)
     {
-        cur_array[THARR2D(0, 0, x_extra)] = (y_invert?-1:1) * cur_array[THARR2D(0, 1, x_extra)];
-    }
-    else if(row == 2)
-    {
-        cur_array[THARR2D(0, 0, x_extra)] = (y_invert?-1:1) * cur_array[THARR2D(0, 3, x_extra)];
-    }
-    else if(row == 1)
-    {
-        cur_array[THARR2D(0, 0, x_extra)] = (y_invert?-1:1) * cur_array[THARR2D(0, 5, x_extra)];
+        if (row < depth)
+        {
+            const int offset = (- row) * 2 - 1 - x_f_offset;
+
+            cur_array[THARR2D(0, y_extra + y_max + 2, x_extra)] =
+                y_invert * cur_array[THARR2D(0, y_max + 2 + offset, x_extra)];
+        }
     }
 }
 
 __global__ void device_update_halo_kernel_left_cuda
 (int x_min,int x_max,int y_min,int y_max,
-int x_extra, int y_extra,
-int x_invert, int y_invert,
+cell_info_t type,
 double* cur_array,
 int depth)
 {
-    __large_kernel_indexes;
-    /*
-    // if on the third column from the left
-    if(row > 0 && row < y_max+3+y_extra
-    && column == 2)
-    {
-        for(int ii = 0; ii < depth; ii++)
-        {
-            cur_array[THARR2D(-(1 + ii), 0, x_extra)] = (x_invert?-1:1) * cur_array[THARR2D(0, 0, x_extra)];
-        }
-    }
-    */
+    int x_extra = type.x_e;
+    int y_extra = type.y_e;
+    int x_invert = type.x_i;
 
-    if(column == 3)
+    // offset by 1 if it is anything but a CELL grid
+    int l_offset = (type.grid_type != CELL_DATA) ? 1 : 0;
+
+    // special indexes for specific depth
+    const int glob_id = threadIdx.x + blockIdx.x * blockDim.x;
+    const int row = glob_id / depth;
+    const int column = glob_id % depth;
+
+    if(row >= 2 - depth && row <= (y_max + 1) + y_extra + depth)
     {
-        cur_array[THARR2D(0, 0, x_extra)] = (x_invert?-1:1) * cur_array[THARR2D(1, 0, x_extra)];
-    }
-    else if(column == 2)
-    {
-        cur_array[THARR2D(0, 0, x_extra)] = (x_invert?-1:1) * cur_array[THARR2D(3, 0, x_extra)];
-    }
-    else if(column == 1)
-    {
-        cur_array[THARR2D(0, 0, x_extra)] = (x_invert?-1:1) * cur_array[THARR2D(5, 0, x_extra)];
+        // first in row
+        const int offset = row * (x_max + 4 + x_extra);
+
+        cur_array[offset + (1 - column)] = x_invert * cur_array[offset + 2 + column + l_offset];
     }
 }
 
 __global__ void device_update_halo_kernel_right_cuda
 (int x_min,int x_max,int y_min,int y_max,
-int x_extra, int y_extra,
-int x_invert, int y_invert,
+cell_info_t type,
 double* cur_array,
 int depth)
 {
-    __large_kernel_indexes;
-    /*
-    // if on the third column from the right
-    if(row > 0 && row < y_max+3+y_extra
-    && column == x_max+1+x_extra)
-    {
-        for(int ii = 0; ii < depth; ii++)
-        {
-            cur_array[THARR2D(1 + ii, 0, x_extra)] = (x_invert?-1:1) * cur_array[THARR2D(0, 0, x_extra)];
-        }
-    }
-    */
+    int x_extra = type.x_e;
+    int y_extra = type.y_e;
+    int x_invert = type.x_i;
+    int y_face = type.y_f;
 
-    if(column == x_max)
+    // offset source by -1 if its a y face
+    int y_f_offset = (y_face) ? 1 : 0;
+
+    const int glob_id = threadIdx.x + blockIdx.x * blockDim.x;
+    const int row = glob_id / depth;
+    const int column = glob_id % depth;
+
+    if(row >= 2 - depth && row <= (y_max + 1) + y_extra + depth)
     {
-        cur_array[THARR2D(0, 0, x_extra)] = (x_invert?-1:1) * cur_array[THARR2D(-1, 0, x_extra)];
-    }
-    else if(column == x_max + 1)
-    {
-        cur_array[THARR2D(0, 0, x_extra)] = (x_invert?-1:1) * cur_array[THARR2D(-3, 0, x_extra)];
-    }
-    else if(column == x_max + 2)
-    {
-        cur_array[THARR2D(0, 0, x_extra)] = (x_invert?-1:1) * cur_array[THARR2D(-5, 0, x_extra)];
+        const int offset = row * (x_max + 4 + x_extra);
+
+        cur_array[offset + x_max + 2 + x_extra + column] = x_invert * cur_array[offset + x_max + 1 - (column + y_f_offset)];
     }
 }
 
 void update_array
 (int x_min,int x_max,int y_min,int y_max,
-int x_extra, int y_extra,
-int x_invert, int y_invert,
+cell_info_t const& type,
 const int* chunk_neighbours,
-double* cur_array,
+double* cur_array_d,
 int depth)
 {
-    #define CHECK_LAUNCH(dir) \
-    if(chunk_neighbours[CHUNK_ ## dir] == EXTERNAL_FACE)\
+    #define CHECK_LAUNCH(face, dir) \
+    if(chunk_neighbours[CHUNK_ ## face] == EXTERNAL_FACE)\
     {\
-        device_update_halo_kernel_ ## dir ## _cuda<<< ((x_max+5)*(y_max+5))/BLOCK_SZ, BLOCK_SZ >>>\
-        (x_min,x_max,y_min,y_max, x_extra, y_extra, x_invert, y_invert, cur_array, depth);\
-        errChk(__LINE__, __FILE__);\
+        const int launch_sz = (ceil((dir##_max+4+type.dir##_e)/static_cast<float>(BLOCK_SZ))) * depth; \
+        device_update_halo_kernel_##face##_cuda \
+        <<< launch_sz, BLOCK_SZ >>> \
+        (x_min, x_max, y_min, y_max, type, cur_array_d, depth); \
+        errChk(__LINE__, __FILE__); \
     }
 
-    CHECK_LAUNCH(bottom);
-    CHECK_LAUNCH(top);
-    CHECK_LAUNCH(right);
-    CHECK_LAUNCH(left);
-
-}
-
-void update_halo_cuda
-(int x_min,int x_max,int y_min,int y_max,
-
-const int* chunk_neighbours,
-
-double* density0,
-double* energy0,
-double* pressure,
-double* viscosity,
-double* soundspeed,
-double* density1,
-double* energy1,
-double* xvel0,
-double* yvel0,
-double* xvel1,
-double* yvel1,
-double* vol_flux_x,
-double* vol_flux_y,
-double* mass_flux_x,
-double* mass_flux_y,
-
-const int* fields,
-int depth)
-{
-
-#ifdef TIME_KERNELS
-_CUDA_BEGIN_PROFILE_name(host);
-#endif
-
-    pointer_storage.setSize(x_max, y_max);
-    double* cur_array_d ;
-
-    #define HALO_UPDATE(arr, x_e, y_e, x_i, y_i) \
-    {if(fields[FIELD_ ## arr] == 1)\
-    {\
-        cur_array_d = pointer_storage.getDevStorageAndCopy(__LINE__, __FILE__, arr, BUFSZ2D(x_e, y_e));\
-        update_array(x_min, x_max, y_min, y_max, \
-            x_e, y_e, x_i, y_i, \
-            chunk_neighbours, cur_array_d, depth);\
-        pointer_storage.freeDevStorageAndCopy(cur_array_d, arr, BUFSZ2D(x_e, y_e));\
-    }}
-
-    HALO_UPDATE(density0, 0, 0, 0, 0);
-    HALO_UPDATE(energy0, 0, 0, 0, 0);
-    HALO_UPDATE(pressure, 0, 0, 0, 0);
-    HALO_UPDATE(viscosity, 0, 0, 0, 0);
-    HALO_UPDATE(soundspeed, 0, 0, 0, 0);
-    HALO_UPDATE(density1, 0, 0, 0, 0);
-    HALO_UPDATE(energy1, 0, 0, 0, 0);
-
-    HALO_UPDATE(xvel0, 1, 1, 1, 0);
-    HALO_UPDATE(yvel0, 1, 1, 0, 1);
-    HALO_UPDATE(xvel1, 1, 1, 1, 0);
-    HALO_UPDATE(yvel1, 1, 1, 0, 1);
-
-    HALO_UPDATE(vol_flux_x, 1, 0, 1, 0);
-    HALO_UPDATE(vol_flux_y, 0, 1, 0, 1);
-    HALO_UPDATE(mass_flux_x, 1, 0, 1, 0);
-    HALO_UPDATE(mass_flux_y, 0, 1, 0, 1);
-
-#ifdef TIME_KERNELS
-_CUDA_END_PROFILE_name(host);
-#endif
+    CHECK_LAUNCH(bottom, x);
+    CHECK_LAUNCH(top, x);
+    CHECK_LAUNCH(left, y);
+    CHECK_LAUNCH(right, y);
 }
 
 extern "C" void update_halo_kernel_cuda_
 (int *x_min,int *x_max,int *y_min,int *y_max,
-int* left,int* bottom,int* right,int* top,
-int* left_boundary,int* bottom_boundary,int* right_boundary,int* top_boundary,
+int* left, int* bottom, int* right, int* top,
+int* left_boundary, int* bottom_boundary, int* right_boundary, int* top_boundary,
 
 const int* chunk_neighbours,
 
@@ -272,62 +170,44 @@ double* mass_flux_x,
 double* mass_flux_y,
 
 const int* fields,
-int* depth)
+const int* depth)
 {
-#ifdef TIME_KERNELS
-_CUDA_BEGIN_PROFILE_name(host);
-#endif
-    #ifndef CUDA_RESIDENT
-    update_halo_cuda(*x_min, *x_max, *y_min, *y_max,
-        chunk_neighbours,
-        density0, energy0, pressure, viscosity, soundspeed, density1, energy1,
-        xvel0, yvel0, xvel1, yvel1,
-        vol_flux_x, vol_flux_y, mass_flux_x, mass_flux_y,
-        fields, *depth);
-    #else
     chunk.update_halo_kernel(fields, *depth, chunk_neighbours);
-    #endif
-#ifdef TIME_KERNELS
-_CUDA_END_PROFILE_name(host);
-#endif
 }
 
 void CloverleafCudaChunk::update_halo_kernel
-(const int* fields, int depth,
+(const int* fields,
+const int depth,
 const int* chunk_neighbours)
 {
-#ifdef TIME_KERNELS
-_CUDA_BEGIN_PROFILE_name(device);
-#endif
+    _CUDA_BEGIN_PROFILE_name(device);
 
-    #define HALO_UPDATE_RESIDENT(arr, x_e, y_e, x_i, y_i) \
+    #define HALO_UPDATE_RESIDENT(arr, type) \
     {if(fields[FIELD_ ## arr] == 1)\
     {\
         update_array(x_min, x_max, y_min, y_max, \
-            x_e, y_e, x_i, y_i, \
-            chunk_neighbours, arr, depth);\
+            type, chunk_neighbours, arr, depth);\
     }}
 
-    HALO_UPDATE_RESIDENT(density0, 0, 0, 0, 0);
-    HALO_UPDATE_RESIDENT(energy0, 0, 0, 0, 0);
-    HALO_UPDATE_RESIDENT(pressure, 0, 0, 0, 0);
-    HALO_UPDATE_RESIDENT(viscosity, 0, 0, 0, 0);
-    HALO_UPDATE_RESIDENT(soundspeed, 0, 0, 0, 0);
-    HALO_UPDATE_RESIDENT(density1, 0, 0, 0, 0);
-    HALO_UPDATE_RESIDENT(energy1, 0, 0, 0, 0);
+    HALO_UPDATE_RESIDENT(density0, CELL);
+    HALO_UPDATE_RESIDENT(density1, CELL);
+    HALO_UPDATE_RESIDENT(energy0, CELL);
+    HALO_UPDATE_RESIDENT(energy1, CELL);
+    HALO_UPDATE_RESIDENT(pressure, CELL);
+    HALO_UPDATE_RESIDENT(viscosity, CELL);
 
-    HALO_UPDATE_RESIDENT(xvel0, 1, 1, 1, 0);
-    HALO_UPDATE_RESIDENT(yvel0, 1, 1, 0, 1);
-    HALO_UPDATE_RESIDENT(xvel1, 1, 1, 1, 0);
-    HALO_UPDATE_RESIDENT(yvel1, 1, 1, 0, 1);
+    HALO_UPDATE_RESIDENT(xvel0, VERTEX_X);
+    HALO_UPDATE_RESIDENT(xvel1, VERTEX_X);
 
-    HALO_UPDATE_RESIDENT(vol_flux_x, 1, 0, 1, 0);
-    HALO_UPDATE_RESIDENT(vol_flux_y, 0, 1, 0, 1);
-    HALO_UPDATE_RESIDENT(mass_flux_x, 1, 0, 1, 0);
-    HALO_UPDATE_RESIDENT(mass_flux_y, 0, 1, 0, 1);
+    HALO_UPDATE_RESIDENT(yvel0, VERTEX_Y);
+    HALO_UPDATE_RESIDENT(yvel1, VERTEX_Y);
 
-#ifdef TIME_KERNELS
-_CUDA_END_PROFILE_name(device);
-#endif
+    HALO_UPDATE_RESIDENT(vol_flux_x, X_FACE);
+    HALO_UPDATE_RESIDENT(mass_flux_x, X_FACE);
+
+    HALO_UPDATE_RESIDENT(vol_flux_y, Y_FACE);
+    HALO_UPDATE_RESIDENT(mass_flux_y, Y_FACE);
+
+    _CUDA_END_PROFILE_name(device);
 }
 

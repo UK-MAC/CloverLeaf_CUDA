@@ -13,9 +13,9 @@ OMP=$(OMP_$(COMPILER))
 
 FLAGS_INTEL     = -O3 -ipo
 FLAGS_SUN       = -O2
-FLAGS_GNU       = -O2 -g
-FLAGS_CRAY      = -em -ra
-FLAGS_PGI       = -O2 -Mpreprocess -g
+FLAGS_GNU       = -O2
+FLAGS_CRAY      = -O2 -em -ra -f free -F
+FLAGS_PGI       = -O2 -Mpreprocess
 FLAGS_PATHSCALE = -O2
 FLAGS_XLF       = -O2
 FLAGS_          = -O2
@@ -28,6 +28,14 @@ CFLAGS_PATHSCALE = -O2
 CFLAGS_XLF       = -O2
 CFLAGS_          = -O2
 
+# flags for nvcc
+# set NV_ARCH to select the correct one
+CODE_GEN_FERMI=-gencode arch=compute_20,code=sm_21
+CODE_GEN_KEPLER=-gencode arch=compute_30,code=sm_30
+
+# requires CUDA_HOME to be set - not the same on all machines
+NV_FLAGS=-O2 -w -c -I $(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -DNO_ERR_CHK
+
 ifdef DEBUG
   FLAGS_INTEL     = -O0 -g -debug all -check all -traceback -check noarg_temp_created
   FLAGS_SUN       = -O0 -xopenmp=noopt -g
@@ -39,6 +47,7 @@ ifdef DEBUG
   FLAGS_          = -O0 -g
   CFLAGS_INTEL    = -O0 -g -c -debug all -traceback -restrict
   CFLAGS_CRAY     = -O0 -g -em -eD
+  NV_FLAGS += -g -G
 endif
 
 ifdef IEEE
@@ -56,7 +65,7 @@ CPPLIBS_PGI=-pgcpplibs
 CPPLIBS_GNU=-lstdc++
 CPPLIBS=$(CPPLIBS_$(COMPILER))
 
-FLAGS=$(FLAGS_$(COMPILER)) $(OMP) $(I3E) $(OPTIONS)
+FLAGS=$(FLAGS_$(COMPILER)) $(OMP) $(I3E) $(OPTIONS) $(RESIDENT_FLAG)
 CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP) $(I3E) $(C_OPTIONS) -c
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
@@ -81,7 +90,7 @@ CUDA_FILES=\
 	update_halo_kernel_cuda.o
 
 all: clover_leaf
-	rm -f *.o *.mod *genmod*
+	rm -f *.o *.mod *genmod* *.lst
 
 clover_leaf: cuda_clover c_lover *.f90
 	$(MPI_COMPILER) $(FLAGS)	\
@@ -138,7 +147,6 @@ clover_leaf: cuda_clover c_lover *.f90
 	ideal_gas_kernel_c.o            \
 	advec_cell_kernel_c.o           \
 	viscosity_kernel_c.o            \
-	timer_c.o                       \
 	$(CUDA_FILES)	\
 	-L $(CUDA_HOME)/lib64 -lcudart $(CPPLIBS) 	\
 	-o clover_leaf
@@ -153,16 +161,13 @@ c_lover:
 	ideal_gas_kernel_c.c            \
 	viscosity_kernel_c.c            \
 	advec_cell_kernel_c.c			\
-	advec_mom_kernel_c.c            \
-	timer_c.c
+	advec_mom_kernel_c.c            
 
-#for kepler use: -gencode arch=compute_30,code=sm_30
 cuda_clover: $(CUDA_FILES)
-	@echo "NB - This creates code for Fermi architecture which supports double precision natively - removing the gencode specification statement will create code that operates on floating point numbers instead, at the cost of a possible loss of precision"
 
 %.o: %.cu 
-	nvcc $(CFLAGS_GNU) -c -DCUDA_RESIDENT -gencode arch=compute_20,code=sm_21 -I $(CUDA_HOME)/include $< #-DTIME_KERNELS 
+	nvcc $(NV_FLAGS) $<
 
 clean:
-	rm -f *.o *.mod *genmod*
+	rm -f *.o *.mod *genmod* *.lst
 
