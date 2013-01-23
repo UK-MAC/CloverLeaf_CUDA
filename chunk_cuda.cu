@@ -76,10 +76,14 @@ private:
     double* work_array_5;
 
     // buffers used in mpi transfers
-    double* dev_left_buffer;
-    double* dev_right_buffer;
-    double* dev_top_buffer;
-    double* dev_bottom_buffer;
+    double* dev_left_send_buffer;
+    double* dev_right_send_buffer;
+    double* dev_top_send_buffer;
+    double* dev_bottom_send_buffer;
+    double* dev_left_recv_buffer;
+    double* dev_right_recv_buffer;
+    double* dev_top_recv_buffer;
+    double* dev_bottom_recv_buffer;
 
     // used for reductions in calc dt, pdv, field summary
     thrust::device_ptr< double > reduce_ptr_1;
@@ -87,7 +91,9 @@ private:
     thrust::device_ptr< double > reduce_ptr_3;
     thrust::device_ptr< double > reduce_ptr_4;
     thrust::device_ptr< double > reduce_ptr_5;
-    size_t num_blocks;
+
+    // number of blocks for work space
+    unsigned int num_blocks;
 
     //as above, but for pdv kernel only
     int* pdv_reduce_array;
@@ -156,13 +162,9 @@ public:
     void copyToDevice(const int array, double* copy_into);
 
     void packBuffer (const int which_array, const int which_side,
-        const int x_inc, const int y_inc,
-        double* buffer, const int buffer_size,
-        const int depth);
+        double* buffer, const int buffer_size, const int depth);
     void unpackBuffer (const int which_array, const int which_side,
-        const int x_inc, const int y_inc,
-        double* buffer, const int buffer_size,
-        const int depth);
+        double* buffer, const int buffer_size, const int depth);
 
     CloverleafCudaChunk
     (INITIALISE_ARGS);

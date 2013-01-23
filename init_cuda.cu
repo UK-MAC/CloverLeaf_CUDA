@@ -3,6 +3,8 @@
 
 #include "cuda_common.cu"
 
+#include <cstdio>
+
 CloverleafCudaChunk chunk;
 
 extern "C" void initialise_cuda_
@@ -40,8 +42,38 @@ right_boundary(*in_right_boundary),
 top_boundary(*in_top_boundary),
 bottom_boundary(*in_bottom_boundary),
 task(*in_task),
-num_blocks((((*in_x_max)+4)*((*in_y_max)+4))/BLOCK_SZ)
+num_blocks((((*in_x_max)+6)*((*in_y_max)+6))/BLOCK_SZ)
 {
+    cudaDeviceSynchronize();
+    cudaThreadSynchronize();
+    cudaThreadExit();
+
+    int dev_count;
+    cudaGetDeviceCount(&dev_count);
+
+    // the gpu to use on this host node
+    int node_gpu = task % dev_count;
+
+    if(!(node_gpu))
+    {
+        std::cout << dev_count << " devices" << std::endl;
+    }
+
+    cudaSetDevice(node_gpu);
+
+    if (task > dev_count - 1)
+    {
+        std::cerr << "WARNING - running more tasks than available devices" << std::endl;
+    }
+
+    std::cout << "task " << task;
+    std::cout << " using device " << node_gpu;
+    std::cout << std::endl;
+
+    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
+    errChk(__LINE__, __FILE__);
+
     #define CUDA_ARRAY_ALLOC(arr, size)                              \
         cudaMalloc((void**) &arr, size);                            \
         cudaDeviceSynchronize();   \
@@ -106,10 +138,14 @@ num_blocks((((*in_x_max)+4)*((*in_y_max)+4))/BLOCK_SZ)
     thr_pressure = thrust::device_ptr< double >(pressure);
     thr_soundspeed = thrust::device_ptr< double >(soundspeed);
 
-    // TODO initialise to depth instead of 3
-    CUDA_ARRAY_ALLOC(dev_left_buffer, sizeof(double)*y_max*4);
-    CUDA_ARRAY_ALLOC(dev_right_buffer, sizeof(double)*y_max*4);
-    CUDA_ARRAY_ALLOC(dev_top_buffer, sizeof(double)*x_max*4);
-    CUDA_ARRAY_ALLOC(dev_bottom_buffer, sizeof(double)*x_max*4);
+    CUDA_ARRAY_ALLOC(dev_left_send_buffer, sizeof(double)*(y_max+5)*2);
+    CUDA_ARRAY_ALLOC(dev_right_send_buffer, sizeof(double)*(y_max+5)*2);
+    CUDA_ARRAY_ALLOC(dev_top_send_buffer, sizeof(double)*(x_max+5)*2);
+    CUDA_ARRAY_ALLOC(dev_bottom_send_buffer, sizeof(double)*(x_max+5)*2);
+
+    CUDA_ARRAY_ALLOC(dev_left_recv_buffer, sizeof(double)*(y_max+5)*2);
+    CUDA_ARRAY_ALLOC(dev_right_recv_buffer, sizeof(double)*(y_max+5)*2);
+    CUDA_ARRAY_ALLOC(dev_top_recv_buffer, sizeof(double)*(x_max+5)*2);
+    CUDA_ARRAY_ALLOC(dev_bottom_recv_buffer, sizeof(double)*(x_max+5)*2);
 }
 

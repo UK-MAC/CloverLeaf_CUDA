@@ -11,33 +11,33 @@ const double* __restrict const vol_flux_y)
 {
     __kernel_indexes;
 
-    if(row < y_max+4
-    && column < x_max+4)
+    if(row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
     {
         if(mom_sweep == 1)
         {
             post_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
                 + vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)];
-            pre_vol[THARR2D(0, 0, 1)] = post_vol[THARR2D(0, 0, 2)]
+            pre_vol[THARR2D(0, 0, 1)] = post_vol[THARR2D(0, 0, 1)]
                 + vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)];
         }
         else if(mom_sweep == 2)
         {
             post_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
                 + vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)];
-            pre_vol[THARR2D(0, 0, 1)] = post_vol[THARR2D(0, 0, 2)]
+            pre_vol[THARR2D(0, 0, 1)] = post_vol[THARR2D(0, 0, 1)]
                 + vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)];
         }
         else if(mom_sweep == 3)
         {
             post_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)];
-            pre_vol[THARR2D(0, 0, 1)] = post_vol[THARR2D(0, 0, 2)]
+            pre_vol[THARR2D(0, 0, 1)] = post_vol[THARR2D(0, 0, 1)]
                 + vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)];
         }
-        else if( mom_sweep == 4)
+        else if(mom_sweep == 4)
         {
             post_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)];
-            pre_vol[THARR2D(0, 0, 1)] = post_vol[THARR2D(0, 0, 2)]
+            pre_vol[THARR2D(0, 0, 1)] = post_vol[THARR2D(0, 0, 1)]
                 + vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)];
         }
     }
@@ -56,21 +56,23 @@ const double* __restrict const density1)
 {
     __kernel_indexes;
 
-    if(row > 1 && row < y_max+3
-    && column < x_max+4)
+    if(row >= (y_min + 1) && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
     {
         node_flux[THARR2D(0, 0, 1)] = 0.25
             * (mass_flux_x[THARR2D(0, -1, 1)] + mass_flux_x[THARR2D(0, 0, 1)]
             + mass_flux_x[THARR2D(1, -1, 1)] + mass_flux_x[THARR2D(1, 0, 1)]);
 
-        if(column > 0)
-        {
+    }
+
+    if(row >= (y_min + 1) && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) - 1 && column <= (x_max + 1) + 2)
+    {
             node_mass_post[THARR2D(0, 0, 1)] = 0.25
                 *(density1[THARR2D(0, -1, 0)]  * post_vol[THARR2D(0, -1, 1)]
                 + density1[THARR2D(0, 0, 0)]   * post_vol[THARR2D(0, 0, 1)]
                 + density1[THARR2D(-1, -1, 0)] * post_vol[THARR2D(-1, -1, 1)]
                 + density1[THARR2D(-1, 0, 0)]  * post_vol[THARR2D(-1, 0, 1)]);
-        }
     }
 }
 
@@ -82,8 +84,8 @@ const double* __restrict const node_mass_post,
 {
     __kernel_indexes;
 
-    if(row > 1 && row < y_max+3
-    && column > 0 && column < x_max+4)
+    if(row >= (y_min + 1) && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) - 1 && column <= (x_max + 1) + 2)
     {
         node_mass_pre[THARR2D(0, 0, 1)] = node_mass_post[THARR2D(0, 0, 1)]
             - node_flux[THARR2D(-1, 0, 1)] + node_flux[THARR2D(0, 0, 1)];
@@ -106,8 +108,8 @@ const double* __restrict const celldx,
     double sigma, width, vdiffuw, vdiffdw, limiter;
     double auw, adw, wind;
 
-    if(row > 1 && row < y_max+3
-    && column > 0 && column < x_max+3)
+    if(row >= (y_min + 1) && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) - 1 && column <= (x_max + 1) + 1)
     {
         if(node_flux[THARR2D(0, 0, 1)] < 0.0)
         {
@@ -133,7 +135,7 @@ const double* __restrict const celldx,
         {
             auw = fabs(vdiffuw);
             adw = fabs(vdiffdw);
-            wind = (vdiffdw < 0.0) ? -1.0 : 1.0;
+            wind = (vdiffdw <= 0.0) ? -1.0 : 1.0;
             width = celldx[column];
             limiter = wind * MIN(width * ((2.0 - sigma) * adw / width 
                 + (1.0 + sigma) * auw / celldx[column + dif]) / 6.0, 
@@ -155,8 +157,8 @@ const double* __restrict const mom_flux,
 {
     __kernel_indexes;
 
-    if(row > 1 && row < y_max+3
-    && column > 1 && column < x_max+3)
+    if(row >= (y_min + 1) && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) && column <= (x_max + 1) + 1)
     {
         xvel1[THARR2D(0, 0, 1)] = (xvel1[THARR2D(0, 0, 1)]
             * node_mass_pre[THARR2D(0, 0, 1)] + mom_flux[THARR2D(-1, 0, 1)]
@@ -177,21 +179,22 @@ const double* __restrict const density1)
 {
     __kernel_indexes;
 
-    if(row < y_max+4
-    && column > 1 && column < x_max+3)
+    if(row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) && column <= (x_max + 1) + 1)
     {
         node_flux[THARR2D(0, 0, 1)] = 0.25
             * (mass_flux_y[THARR2D(-1, 0, 0)] + mass_flux_y[THARR2D(0, 0, 0)]
             + mass_flux_y[THARR2D(-1, 1, 0)] + mass_flux_y[THARR2D(0, 1, 0)]);
+    }
 
-        if(row > 0)
-        {
-            node_mass_post[THARR2D(0, 0, 1)] = 0.25
-                * (density1[THARR2D(0, -1, 0)] * post_vol[THARR2D(0, -1, 1)]
-                + density1[THARR2D(0, 0, 0)]   * post_vol[THARR2D(0, 0, 1)]
-                + density1[THARR2D(-1, -1, 0)] * post_vol[THARR2D(-1, -1, 1)]
-                + density1[THARR2D(-1, 0, 0)]  * post_vol[THARR2D(-1, 0, 1)]);
-        }
+    if(row >= (y_min + 1) - 1 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) && column <= (x_max + 1) + 1)
+    {
+        node_mass_post[THARR2D(0, 0, 1)] = 0.25
+            * (density1[THARR2D(0, -1, 0)] * post_vol[THARR2D(0, -1, 1)]
+            + density1[THARR2D(0, 0, 0)]   * post_vol[THARR2D(0, 0, 1)]
+            + density1[THARR2D(-1, -1, 0)] * post_vol[THARR2D(-1, -1, 1)]
+            + density1[THARR2D(-1, 0, 0)]  * post_vol[THARR2D(-1, 0, 1)]);
     }
 }
 
@@ -203,8 +206,8 @@ const double* __restrict const node_mass_post,
 {
     __kernel_indexes;
 
-    if(row > 0 && row < y_max+4
-    && column > 1 && column < x_max+3)
+    if(row >= (y_min + 1) - 1 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) && column <= (x_max + 1) + 1)
     {
         node_mass_pre[THARR2D(0, 0, 1)] = node_mass_post[THARR2D(0, 0, 1)]
             - node_flux[THARR2D(0, -1, 1)] + node_flux[THARR2D(0, 0, 1)];
@@ -227,8 +230,8 @@ const double* __restrict const celldy,
     double sigma, width, vdiffuw, vdiffdw, limiter;
     double auw, adw, wind;
 
-    if(row > 0 && row < y_max+3
-    && column > 1 && column < x_max+3)
+    if(row >= (y_min + 1) - 1 && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) && column <= (x_max + 1) + 1)
     {
         if(node_flux[THARR2D(0, 0, 1)] < 0.0)
         {
@@ -254,7 +257,7 @@ const double* __restrict const celldy,
         {
             auw = fabs(vdiffuw);
             adw = fabs(vdiffdw);
-            wind = (vdiffdw < 0.0) ? -1.0 : 1.0;
+            wind = (vdiffdw <= 0.0) ? -1.0 : 1.0;
             width = celldy[row];
             limiter = wind * MIN(width * ((2.0 - sigma) * adw / width 
                 + (1.0 + sigma) * auw / celldy[row + dif]) / 6.0, 
@@ -276,8 +279,8 @@ const double* __restrict const mom_flux,
 {
     __kernel_indexes;
 
-    if(row > 1 && row < y_max+3
-    && column > 1 && column < x_max+3)
+    if(row >= (y_min + 1) && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) && column <= (x_max + 1) + 1)
     {
         yvel1[THARR2D(0, 0, 1)] = (yvel1[THARR2D(0, 0, 1)]
             * node_mass_pre[THARR2D(0, 0, 1)] + mom_flux[THARR2D(0, -1, 1)]

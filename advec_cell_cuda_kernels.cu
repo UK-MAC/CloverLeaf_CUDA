@@ -1,6 +1,5 @@
 #include "cuda_common.cu"
 
-//> \def common arguments into the kernels for both x and y direction
 #define _SHARED_KERNEL_ARGS_                    \
     const int x_min,                            \
     const int x_max,                            \
@@ -27,20 +26,20 @@ const double* __restrict const vol_flux_y)
 {
     __kernel_indexes;
 
-    if(row < y_max + 4
-    && column < x_max + 4)
+    if(row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
     {
         if(swp_nmbr == 1)
         {
-            pre_vol[THARR2D(0, 0, 0)] = volume[THARR2D(0, 0, 0)]
-                + vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)]
-                + vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)];
-            post_vol[THARR2D(0, 0, 1)] = pre_vol[THARR2D(0, 0, 0)]
+            pre_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
+                +(vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)]
+                + vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)]);
+            post_vol[THARR2D(0, 0, 1)] = pre_vol[THARR2D(0, 0, 1)]
                 - (vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)]);
         }
         else
         {
-            pre_vol[THARR2D(0, 0, 0)] = volume[THARR2D(0, 0, 0)]
+            pre_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
                 + vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)];
             post_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)];
         }
@@ -66,35 +65,33 @@ const double* __restrict const vertexdx,
     //  +++++++++++++++++++++
     //  +++++++++++++++++++++
     //
-    if(row > 1 && row < y_max+2
-    && column > 1 && column < x_max+4)
+    if(row >= (y_min + 1) && row <= (y_max + 1)
+    && column >= (x_min + 1) && column <= (x_max + 1) + 2)
     {
         // if flowing right
         if(vol_flux_x[THARR2D(0, 0, 1)] > 0.0)
         {
-            upwind = THARR2D(-2, 0, 0);
-            donor = THARR2D(-1, 0, 0);
-            downwind = THARR2D(0, 0, 0);
+            upwind = -2;
+            donor = -1;
+            downwind = 0;
             dif = donor;
         }
         else
         {
-            //
             //  tries to get from below, unless it would be reading from a cell
-            //  which would be off the bottom, in which case read from cur cell
-            //
-            upwind = (column == x_max+3) ? THARR2D(0, 0, 0) : THARR2D(1, 0, 0);
-            donor = THARR2D(0, 0, 0);
-            downwind = THARR2D(-1, 0, 0);
+            //  which would be off the right, in which case read from cur cell
+            upwind = (column == (x_max + 1) + 2) ? 0 : 1;
+            donor = 0;
+            downwind = -1;
             dif = upwind;
         }
 
-        sigmat = fabs(vol_flux_x[THARR2D(0, 0, 1)]) / pre_vol[donor];
-        sigma3 = (1.0 + sigmat) * (vertexdx[column] / vertexdx[dif % (x_max+5)]);
+        sigmat = fabs(vol_flux_x[THARR2D(0, 0, 1)]) / pre_vol[THARR2D(donor, 0, 1)];
+        sigma3 = (1.0 + sigmat) * (vertexdx[column] / vertexdx[column + dif]);
         sigma4 = 2.0 - sigmat;
 
-        diffuw = density1[donor] - density1[upwind];
-        diffdw = density1[downwind] - density1[donor];
+        diffuw = density1[THARR2D(donor, 0, 0)] - density1[THARR2D(upwind, 0, 0)];
+        diffdw = density1[THARR2D(downwind, 0, 0)] - density1[THARR2D(donor, 0, 0)];
 
         if(diffuw * diffdw > 0.0)
         {
@@ -108,12 +105,12 @@ const double* __restrict const vertexdx,
         }
 
         mass_flux_x[THARR2D(0, 0, 1)] = vol_flux_x[THARR2D(0, 0, 1)]
-            * (density1[donor] + limiter);
+            * (density1[THARR2D(donor, 0, 0)] + limiter);
 
         sigmam = fabs(mass_flux_x[THARR2D(0, 0, 1)])
-            / (density1[donor] * pre_vol[donor]);
-        diffuw = energy1[donor] - energy1[upwind];
-        diffdw = energy1[downwind] - energy1[donor];
+            / (density1[THARR2D(donor, 0, 0)] * pre_vol[THARR2D(donor, 0, 1)]);
+        diffuw = energy1[THARR2D(donor, 0, 0)] - energy1[THARR2D(upwind, 0, 0)];
+        diffdw = energy1[THARR2D(downwind, 0, 0)] - energy1[THARR2D(donor, 0, 0)];
 
         if(diffuw * diffdw > 0.0)
         {
@@ -127,7 +124,7 @@ const double* __restrict const vertexdx,
         }
 
         ener_flux[THARR2D(0, 0, 0)] = mass_flux_x[THARR2D(0, 0, 1)]
-            * (energy1[donor] + limiter);
+            * (energy1[THARR2D(donor, 0, 0)] + limiter);
     }
 }
 
@@ -147,10 +144,10 @@ const double* __restrict const mass_flux_x)
     //  +++++++++++++++++++++
     //  +++++++++++++++++++++
     //
-    if(row > 1 && row < y_max+2
-    && column > 1 && column < x_max+2)
+    if(row >= (y_min + 1) && row <= (y_max + 1)
+    && column >= (x_min + 1) && column <= (x_max + 1))
     {
-        pre_mass = density1[THARR2D(0, 0, 0)] * pre_vol[THARR2D(0, 0, 0)];
+        pre_mass = density1[THARR2D(0, 0, 0)] * pre_vol[THARR2D(0, 0, 1)];
 
         post_mass = pre_mass + mass_flux_x[THARR2D(0, 0, 1)]
             - mass_flux_x[THARR2D(1, 0, 1)];
@@ -159,7 +156,7 @@ const double* __restrict const mass_flux_x)
             + ener_flux[THARR2D(0, 0, 0)] - ener_flux[THARR2D(1, 0, 0)])
             / post_mass;
 
-        advec_vol = pre_vol[THARR2D(0, 0, 0)] + vol_flux_x[THARR2D(0, 0, 1)]
+        advec_vol = pre_vol[THARR2D(0, 0, 1)] + vol_flux_x[THARR2D(0, 0, 1)]
             - vol_flux_x[THARR2D(1, 0, 1)];
 
         density1[THARR2D(0, 0, 0)] = post_mass / advec_vol;
@@ -182,20 +179,20 @@ const double* __restrict const vol_flux_y)
 {
     __kernel_indexes;
 
-    if(row < y_max + 4
-    && column < x_max + 4)
+    if(row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
     {
         if(swp_nmbr == 1)
         {
-            pre_vol[THARR2D(0, 0, 0)] = volume[THARR2D(0, 0, 0)]
-                + vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)]
-                + vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)];
-            post_vol[THARR2D(0, 0, 1)] = pre_vol[THARR2D(0, 0, 0)]
+            pre_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
+                +(vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)]
+                + vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)]);
+            post_vol[THARR2D(0, 0, 1)] = pre_vol[THARR2D(0, 0, 1)]
                 - (vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 1)]);
         }
         else
         {
-            pre_vol[THARR2D(0, 0, 0)] = volume[THARR2D(0, 0, 0)]
+            pre_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
                 + vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)];
             post_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)];
         }
@@ -220,15 +217,15 @@ const double* __restrict const vertexdy,
     //  ++xxxxxxxxxxxxxxxxx++
     //  ++xxxxxxxxxxxxxxxxx++
     //
-    if(row > 1 && row < y_max+4
-    && column > 1 && column < x_max+2)
+    if(row >= (y_min + 1) && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) && column <= (x_max + 1))
     {
         // if flowing right
         if(vol_flux_y[THARR2D(0, 0, 0)] > 0.0)
         {
-            upwind = THARR2D(0, -2, 0);
-            donor = THARR2D(0, -1, 0);
-            downwind = THARR2D(0, 0, 0);
+            upwind = -2;
+            donor = -1;
+            downwind = 0;
             dif = donor;
         }
         else
@@ -237,18 +234,18 @@ const double* __restrict const vertexdy,
             //  tries to get from below, unless it would be reading from a cell
             //  which would be off the bottom, in which case read from cur cell
             //
-            upwind = (row == y_max+3) ? THARR2D(0, 0, 0) : THARR2D(0, 1, 0);
-            donor = THARR2D(0, 0, 0);
-            downwind = THARR2D(0, -1, 0);
-            dif = upwind;
+            upwind = (row == (y_max + 1) + 2) ? 0 : 1;
+            donor = 0;
+            downwind = -1;
+            dif = downwind;
         }
 
-        sigmat = fabs(vol_flux_y[THARR2D(0, 0, 0)]) / pre_vol[donor];
-        sigma3 = (1.0 + sigmat) * (vertexdy[row] / vertexdy[dif / (x_max+4)]);
+        sigmat = fabs(vol_flux_y[THARR2D(0, 0, 0)]) / pre_vol[THARR2D(0, donor, 1)];
+        sigma3 = (1.0 + sigmat) * (vertexdy[row] / vertexdy[row + dif]);
         sigma4 = 2.0 - sigmat;
 
-        diffuw = density1[donor] - density1[upwind];
-        diffdw = density1[downwind] - density1[donor];
+        diffuw = density1[THARR2D(0, donor, 0)] - density1[THARR2D(0, upwind, 0)];
+        diffdw = density1[THARR2D(0, downwind, 0)] - density1[THARR2D(0, donor, 0)];
 
         if(diffuw * diffdw > 0.0)
         {
@@ -262,12 +259,12 @@ const double* __restrict const vertexdy,
         }
 
         mass_flux_y[THARR2D(0, 0, 0)] = vol_flux_y[THARR2D(0, 0, 0)]
-            * (density1[donor] + limiter);
+            * (density1[THARR2D(0, donor, 0)] + limiter);
 
         sigmam = fabs(mass_flux_y[THARR2D(0, 0, 0)])
-            / (density1[donor] * pre_vol[donor]);
-        diffuw = energy1[donor] - energy1[upwind];
-        diffdw = energy1[downwind] - energy1[donor];
+            / (density1[THARR2D(0, donor, 0)] * pre_vol[THARR2D(0, donor, 1)]);
+        diffuw = energy1[THARR2D(0, donor, 0)] - energy1[THARR2D(0, upwind, 0)];
+        diffdw = energy1[THARR2D(0, downwind, 0)] - energy1[THARR2D(0, donor, 0)];
 
         if(diffuw * diffdw > 0.0)
         {
@@ -281,7 +278,7 @@ const double* __restrict const vertexdy,
         }
 
         ener_flux[THARR2D(0, 0, 0)] = mass_flux_y[THARR2D(0, 0, 0)]
-            * (energy1[donor] + limiter);
+            * (energy1[THARR2D(0, donor, 0)] + limiter);
     }
 }
 
@@ -301,10 +298,10 @@ const double* __restrict const mass_flux_y)
     //  +++++++++++++++++++++
     //  +++++++++++++++++++++
     //
-    if(row > 1 && row < y_max+2
-    && column > 1 && column < x_max+2)
+    if(row >= (y_min + 1) && row <= (y_max + 1)
+    && column >= (x_min + 1) && column <= (x_max + 1))
     {
-        pre_mass = density1[THARR2D(0, 0, 0)] * pre_vol[THARR2D(0, 0, 0)];
+        pre_mass = density1[THARR2D(0, 0, 0)] * pre_vol[THARR2D(0, 0, 1)];
 
         post_mass = pre_mass + mass_flux_y[THARR2D(0, 0, 0)]
             - mass_flux_y[THARR2D(0, 1, 0)];
@@ -313,7 +310,7 @@ const double* __restrict const mass_flux_y)
             + ener_flux[THARR2D(0, 0, 0)] - ener_flux[THARR2D(0, 1, 0)])
             / post_mass;
 
-        advec_vol = pre_vol[THARR2D(0, 0, 0)] + vol_flux_y[THARR2D(0, 0, 0)]
+        advec_vol = pre_vol[THARR2D(0, 0, 1)] + vol_flux_y[THARR2D(0, 0, 0)]
             - vol_flux_y[THARR2D(0, 1, 0)];
 
         density1[THARR2D(0, 0, 0)] = post_mass / advec_vol;
