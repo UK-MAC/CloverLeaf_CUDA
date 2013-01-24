@@ -147,6 +147,7 @@ clover_leaf: cuda_clover c_lover *.f90
 	ideal_gas_kernel_c.o            \
 	advec_cell_kernel_c.o           \
 	viscosity_kernel_c.o            \
+	timer_c.o                       \
 	$(CUDA_FILES)	\
 	-L $(CUDA_HOME)/lib64 -lcudart $(CPPLIBS) 	\
 	-o clover_leaf
@@ -160,8 +161,9 @@ c_lover:
 	reset_field_kernel_c.c          \
 	ideal_gas_kernel_c.c            \
 	viscosity_kernel_c.c            \
-	advec_cell_kernel_c.c			\
-	advec_mom_kernel_c.c            
+	advec_cell_kernel_c.c		\
+	advec_cell_kernel_c.c		\
+	timer_c.c            
 
 cuda_clover: $(CUDA_FILES)
 
