@@ -1,0 +1,17 @@
+To make CUDA, do something like:
+
+make COMPILER=CRAY NV_ARCH=FERMI -j 6
+
+-COMPILER is the same as with the other implementations
+
+-NV_ARCH is the architecture - fermi or kepler only, due to things with work
+ group sizes and shared storage to do with reductions.
+
+-job number cna be however many you want, but has no effect above 22 because
+ that's how many files it can process in parallel
+
+If on a cray, add:
+
+MPI_COMPILER=ftn C_MPI_COMPILER=cc
+
+so it uses the cray build scripts.
