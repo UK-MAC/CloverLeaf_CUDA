@@ -40,7 +40,6 @@ SUBROUTINE update_halo(fields,depth)
     IF(chunks(c)%task.EQ.parallel%task) THEN
 
       IF(use_cuda_kernels) THEN
-        !CALL update_halo_kernel(chunks(c)%field%x_min,          &
         CALL update_halo_kernel_cuda(chunks(c)%field%x_min,          &
                               chunks(c)%field%x_max,          &
                               chunks(c)%field%y_min,          &

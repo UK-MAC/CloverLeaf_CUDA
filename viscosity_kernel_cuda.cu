@@ -51,23 +51,24 @@ const double * __restrict const yvel0)
                 + (strain2 * pgradx * pgrady))
                 / MAX(pgradx2 + pgrady2, 1.0e-16);
 
-        pgradx = SIGN(MAX(1.0e-16, fabs(pgradx)), pgradx);
-        pgrady = SIGN(MAX(1.0e-16, fabs(pgrady)), pgrady);
-        pgrad = sqrt((pgradx * pgradx) + (pgrady * pgrady));
-
-        xgrad = fabs(celldx[column] * pgrad / pgradx);
-        ygrad = fabs(celldy[row] * pgrad / pgrady);
-
-        grad = MIN(xgrad, ygrad);
-        grad2 = grad * grad;
-
         if(limiter > 0 || div >= 0.0)
         {
             viscosity[THARR2D(0,0,0)] = 0.0;
         }
         else
         {
-            viscosity[THARR2D(0,0,0)] = 2.0 * density0[THARR2D(0,0,0)] * grad2 * (limiter * limiter);
+          pgradx = SIGN(MAX(1.0e-16, fabs(pgradx)), pgradx);
+          pgrady = SIGN(MAX(1.0e-16, fabs(pgrady)), pgrady);
+          //pgrad = sqrt((pgradx * pgradx) + (pgrady * pgrady));
+          pgrad *= rsqrt((pgradx * pgradx) + (pgrady * pgrady));
+
+          xgrad = fabs(celldx[column] * pgrad / pgradx);
+          ygrad = fabs(celldy[row] * pgrad / pgrady);
+
+          grad = MIN(xgrad, ygrad);
+          grad2 = grad * grad;
+
+          viscosity[THARR2D(0,0,0)] = 2.0 * density0[THARR2D(0,0,0)] * grad2 * (limiter * limiter);
         }
     }
 }

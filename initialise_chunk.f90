@@ -39,7 +39,6 @@ SUBROUTINE initialise_chunk(chunk)
 
 
   IF(use_cuda_kernels) THEN
-    !CALL initialise_chunk_kernel(chunks(chunk)%field%x_min,    &
     CALL initialise_chunk_kernel_cuda(chunks(chunk)%field%x_min,    &
                                chunks(chunk)%field%x_max,    &
                                chunks(chunk)%field%y_min,    &

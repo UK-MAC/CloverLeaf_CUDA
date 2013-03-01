@@ -55,18 +55,21 @@ CONTAINS
       y_inc=1
     ENDIF
 
-    left_buf_sz = (1+(chunks(chunk)%field%y_max+y_inc+depth)    &
-        -(chunks(chunk)%field%y_min-depth))*depth
-    right_buf_sz = (1+(chunks(chunk)%field%y_max+y_inc+depth)   &
-        -(chunks(chunk)%field%y_min-depth))*depth
-    bottom_buf_sz = (1+(chunks(chunk)%field%x_max+x_inc+depth)  &
-        -(chunks(chunk)%field%x_min-depth))*depth
-    top_buf_sz = (1+(chunks(chunk)%field%x_max+x_inc+depth) &
-        -(chunks(chunk)%field%x_min-depth))*depth
+    !left_buf_sz = (1+(chunks(chunk)%field%y_max+y_inc+depth)    &
+        !-(chunks(chunk)%field%y_min-depth))*depth
+    !right_buf_sz = (1+(chunks(chunk)%field%y_max+y_inc+depth)   &
+        !-(chunks(chunk)%field%y_min-depth))*depth
+    !bottom_buf_sz = (1+(chunks(chunk)%field%x_max+x_inc+depth)  &
+        !-(chunks(chunk)%field%x_min-depth))*depth
+    !top_buf_sz = (1+(chunks(chunk)%field%x_max+x_inc+depth) &
+        !-(chunks(chunk)%field%x_min-depth))*depth
 
-  !if(chunks(parallel%task+1)%task .eq. 1) then
-      !write(*,*) left_buf_sz, x_inc, y_inc, depth
-  !endif
+    ! set to col/row size (?)
+    left_buf_sz = (chunks(chunk)%field%y_max+5)*depth
+    right_buf_sz = (chunks(chunk)%field%y_max+5)*depth
+
+    top_buf_sz = (chunks(chunk)%field%x_max+5)*depth
+    bottom_buf_sz = (chunks(chunk)%field%x_max+5)*depth
 
     request=0
     message_count=0
@@ -77,7 +80,7 @@ CONTAINS
         receiver=chunks(chunks(chunk)%chunk_neighbours(chunk_left))%task
 
         !PACK BUFFER
-        CALL cudapackbuffers(which_array, LEFT_FACE, x_inc, y_inc, left_snd_buffer, left_buf_sz, depth)
+        CALL cudapackbuffers(which_array, LEFT_FACE, left_snd_buffer, left_buf_sz, depth)
 
         CALL MPI_ISEND(left_snd_buffer,left_buf_sz,MPI_DOUBLE_PRECISION,receiver,tag &
               ,MPI_COMM_WORLD,request(message_count+1),err)
@@ -94,7 +97,7 @@ CONTAINS
         receiver=chunks(chunks(chunk)%chunk_neighbours(chunk_right))%task
 
         !PACK BUFFER
-        CALL cudapackbuffers(which_array, RIGHT_FACE, x_inc, y_inc, right_snd_buffer, right_buf_sz, depth)
+        CALL cudapackbuffers(which_array, RIGHT_FACE, right_snd_buffer, right_buf_sz, depth)
 
         CALL MPI_ISEND(right_snd_buffer,right_buf_sz,MPI_DOUBLE_PRECISION,receiver,tag &
               ,MPI_COMM_WORLD,request(message_count+1),err)
@@ -109,14 +112,15 @@ CONTAINS
     CALL MPI_WAITALL(message_count,request,status,err)
 
     IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
-      call cudaunpackbuffers(which_array, LEFT_FACE, x_inc, y_inc, left_rcv_buffer, left_buf_sz, depth)
+      call cudaunpackbuffers(which_array, LEFT_FACE, left_rcv_buffer, left_buf_sz, depth)
     ENDIF
     IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
-      call cudaunpackbuffers(which_array, RIGHT_FACE, x_inc, y_inc, right_rcv_buffer, right_buf_sz, depth)
+      call cudaunpackbuffers(which_array, RIGHT_FACE, right_rcv_buffer, right_buf_sz, depth)
     ENDIF
 
     request=0
     message_count=0
+
 
     IF(parallel%task.EQ.chunks(chunk)%task) THEN
       IF(chunks(chunk)%chunk_neighbours(chunk_bottom).NE.external_face) THEN
@@ -124,7 +128,7 @@ CONTAINS
         receiver=chunks(chunks(chunk)%chunk_neighbours(chunk_bottom))%task
 
         !PACK BUFFER
-        CALL cudapackbuffers(which_array, BOTTOM_FACE, x_inc, y_inc, bottom_snd_buffer, bottom_buf_sz, depth)
+        CALL cudapackbuffers(which_array, BOTTOM_FACE, bottom_snd_buffer, bottom_buf_sz, depth)
 
         CALL MPI_ISEND(bottom_snd_buffer,bottom_buf_sz,MPI_DOUBLE_PRECISION,receiver,tag &
               ,MPI_COMM_WORLD,request(message_count+1),err)
@@ -140,7 +144,7 @@ CONTAINS
         receiver=chunks(chunks(chunk)%chunk_neighbours(chunk_top))%task
 
         !PACK BUFFER
-        CALL cudapackbuffers(which_array, TOP_FACE, x_inc, y_inc, top_snd_buffer, top_buf_sz, depth)
+        CALL cudapackbuffers(which_array, TOP_FACE, top_snd_buffer, top_buf_sz, depth)
 
         CALL MPI_ISEND(top_snd_buffer,top_buf_sz,MPI_DOUBLE_PRECISION,receiver,tag &
               ,MPI_COMM_WORLD,request(message_count+1),err)
@@ -157,10 +161,10 @@ CONTAINS
     CALL MPI_WAITALL(message_count,request,status,err)
 
     IF(chunks(chunk)%chunk_neighbours(chunk_top).NE.external_face) THEN
-      call cudaunpackbuffers(which_array, TOP_FACE, x_inc, y_inc, top_rcv_buffer, top_buf_sz, depth)
+      call cudaunpackbuffers(which_array, TOP_FACE, top_rcv_buffer, top_buf_sz, depth)
     ENDIF
     IF(chunks(chunk)%chunk_neighbours(chunk_bottom).NE.external_face) THEN
-      call cudaunpackbuffers(which_array, BOTTOM_FACE, x_inc, y_inc, bottom_rcv_buffer, bottom_buf_sz, depth)
+      call cudaunpackbuffers(which_array, BOTTOM_FACE, bottom_rcv_buffer, bottom_buf_sz, depth)
     ENDIF
 
   END SUBROUTINE cufor_mpi_interop
