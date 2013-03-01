@@ -23,6 +23,7 @@
 SUBROUTINE build_field(chunk,x_cells,y_cells)
 
    USE clover_module
+   USE MPI
 
    IMPLICIT NONE
 
@@ -48,7 +49,7 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
                           chunks(chunk)%field%top_boundary,   &
                           chunks(chunk)%field%bottom_boundary,    &
                           chunks(chunk)%task)
-     CALL MPI_BARRIER(MPI_COMM_WORLD, err)
+     CALL clover_barrier
    ELSE 
 
      ALLOCATE(chunks(chunk)%field%density0  (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
