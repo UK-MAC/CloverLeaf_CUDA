@@ -22,8 +22,6 @@
  *  @details The edge volume fluxes are calculated based on the velocity fields.
  */
 
- */
-
 #include "cuda_common.cu"
 #include "ftocmacros.h"
 #include <iostream>
