@@ -1,23 +1,28 @@
-!Crown Copyright 2012 AWE.
-!
-! This file is part of CloverLeaf.
-!
-! CloverLeaf is free software: you can redistribute it and/or modify it under
-! the terms of the GNU General Public License as published by the
-! Free Software Foundation, either version 3 of the License, or (at your option)
-! any later version.
-!
-! CloverLeaf is distributed in the hope that it will be useful, but
-! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-! details.
-!
-! You should have received a copy of the GNU General Public License along with
-! CloverLeaf. If not, see http://www.gnu.org/licenses/.
+/*Crown Copyright 2012 AWE.
+ *
+ * This file is part of CloverLeaf.
+ *
+ * CloverLeaf is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * CloverLeaf is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * CloverLeaf. If not, see http://www.gnu.org/licenses/.
+ */
 
-!>  @brief CloverLeaf top level program: Invokes the main cycle
-!>  @author Michael Boulton
-!>  @details CLoverLeaf in a proxy-app that solves the compressible Euler
+/*
+ *  @brief CUDA ideal gas kernel.
+ *  @author Michael Boulton
+ *  @details Calculates the pressure and sound speed for the mesh chunk using
+ *  the ideal gas equation of state, with a fixed gamma of 1.4.
+ */
+
 
 #include "ftocmacros.h"
 #include "cuda_common.cu"
