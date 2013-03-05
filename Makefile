@@ -24,6 +24,10 @@ ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
 endif
 
+ifndef NV_ARCH
+  MESSAGE=select an NVIDA device to compile in CUDA, e.g. make NV_ARCH=KEPLER
+endif
+
 OMP_INTEL     = -openmp
 OMP_SUN       = -xopenmp=parallel -vpara
 OMP_GNU       = -fopenmp
