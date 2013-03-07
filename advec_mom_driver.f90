@@ -35,7 +35,7 @@ SUBROUTINE advec_mom_driver(chunk,which_vel,direction,sweep_number)
   IF(chunks(chunk)%task.EQ.parallel%task) THEN
 
      IF(use_CUDA_kernels) THEN
-       CALL advec_mom_kernel_cuda(chunks(chunk)%field%x_min,          &
+       CALL advec_mom_kernel_cuda(chunks(chunk)%field%x_min,       &
                            chunks(chunk)%field%x_max,              &
                            chunks(chunk)%field%y_min,              &
                            chunks(chunk)%field%y_max,              &
@@ -47,11 +47,19 @@ SUBROUTINE advec_mom_driver(chunk,which_vel,direction,sweep_number)
                            chunks(chunk)%field%vol_flux_y,         &
                            chunks(chunk)%field%volume,             &
                            chunks(chunk)%field%density1,           &
+                           chunks(chunk)%field%work_array1,        &
+                           chunks(chunk)%field%work_array2,        &
+                           chunks(chunk)%field%work_array3,        &
+                           chunks(chunk)%field%work_array4,        &
+                           chunks(chunk)%field%work_array5,        &
+                           chunks(chunk)%field%work_array6,        &
+                           chunks(chunk)%field%work_array7,        &
                            chunks(chunk)%field%celldx,             &
                            chunks(chunk)%field%celldy,             &
                            which_vel,                              &
                            sweep_number,                           &
-                           direction                               )
+                           direction,                              &
+                           .false.                                 )
      ELSE    &
     IF(use_fortran_kernels)THEN
       CALL advec_mom_kernel(chunks(chunk)%field%x_min,            &

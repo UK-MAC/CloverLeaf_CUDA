@@ -35,12 +35,13 @@ SUBROUTINE advec_cell_driver(chunk,sweep_number,dir)
   IF(chunks(chunk)%task.EQ.parallel%task) THEN
 
     IF(use_CUDA_kernels)THEN
-      CALL advec_cell_kernel_cuda(chunks(chunk)%field%x_min,               &
+      CALL advec_cell_kernel_cuda(chunks(chunk)%field%x_min,          &
                            chunks(chunk)%field%x_max,                 &
                            chunks(chunk)%field%y_min,                 &
                            chunks(chunk)%field%y_max,                 &
                            dir,                                       &
                            sweep_number,                              &
+                           .false.,                                   &
                            chunks(chunk)%field%vertexdx,              &
                            chunks(chunk)%field%vertexdy,              &
                            chunks(chunk)%field%volume,                &

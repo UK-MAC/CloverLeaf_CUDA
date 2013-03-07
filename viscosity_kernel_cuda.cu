@@ -85,8 +85,7 @@ const double * __restrict const yvel0)
         {
           pgradx = SIGN(MAX(1.0e-16, fabs(pgradx)), pgradx);
           pgrady = SIGN(MAX(1.0e-16, fabs(pgrady)), pgrady);
-          //pgrad = sqrt((pgradx * pgradx) + (pgrady * pgrady));
-          pgrad *= rsqrt((pgradx * pgradx) + (pgrady * pgrady));
+          pgrad = sqrt((pgradx * pgradx) + (pgrady * pgrady));
 
           xgrad = fabs(celldx[column] * pgrad / pgradx);
           ygrad = fabs(celldy[row] * pgrad / pgrady);

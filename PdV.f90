@@ -48,7 +48,7 @@ SUBROUTINE PdV(predict)
     IF(chunks(c)%task.EQ.parallel%task) THEN
 
       IF(use_CUDA_kernels)THEN
-        CALL PdV_kernel_cuda(error_condition ,    &
+        CALL PdV_kernel_cuda(error_condition,     &
                       predict,                    &
                       chunks(c)%field%x_min,      &
                       chunks(c)%field%x_max,      &
@@ -67,7 +67,8 @@ SUBROUTINE PdV(predict)
                       chunks(c)%field%xvel0,      &
                       chunks(c)%field%xvel1,      &
                       chunks(c)%field%yvel0,      &
-                      chunks(c)%field%yvel1)
+                      chunks(c)%field%yvel1,      &
+                      chunks(c)%field%work_array1 )
       ELSE &
       IF(use_fortran_kernels)THEN
         CALL PdV_kernel(predict,                  &

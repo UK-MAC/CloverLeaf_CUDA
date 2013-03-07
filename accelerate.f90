@@ -51,7 +51,8 @@ SUBROUTINE accelerate()
                              chunks(c)%field%xvel0,                  &
                              chunks(c)%field%yvel0,                  &
                              chunks(c)%field%xvel1,                  &
-                             chunks(c)%field%yvel1                   )
+                             chunks(c)%field%yvel1,                  &
+                             chunks(c)%field%work_array1             )
       ELSE  &
       IF(use_fortran_kernels) THEN
         CALL accelerate_kernel(chunks(c)%field%x_min,                &
