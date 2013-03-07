@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA momentum advection driver
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details CUDA momentum advection driver.
  */
 

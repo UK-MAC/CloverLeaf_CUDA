@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA revert kernel.
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details Takes the half step field data used in the predictor and reverts
  *  it to the start of step data, ready for the corrector.
  *  Note that this does not seem necessary in this proxy-app but should be

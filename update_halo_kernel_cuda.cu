@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA kernel to update the external halo cells in a chunk.
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details Updates halo cells for the required fields at the required depth
  *  for any halo cells that lie on an external boundary. The location and type
  *  of data governs how this is carried out. External boundaries are always

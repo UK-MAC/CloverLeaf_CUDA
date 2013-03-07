@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA reset field kernel.
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details CUDA Copies all of the final end of step filed data to the begining of
  *  step data, ready for the next timestep.
  */

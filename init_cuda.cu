@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA initialisation
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details Initialises CUDA devices and global storage
  */
 

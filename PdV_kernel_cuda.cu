@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA PdV kernel.
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details Calculates the change in energy and density in a cell using the
  *  change on cell volume due to the velocity gradients in a cell. The time
  *  level of the velocity data depends on whether it is invoked as the

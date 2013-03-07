@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA acceleration kernel
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details The pressure and viscosity gradients are used to update the
  *  velocity field.
  */

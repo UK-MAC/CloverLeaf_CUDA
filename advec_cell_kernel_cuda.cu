@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA cell advection kernel driver.
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details CUDA cell advection kernel driver.
  */
 

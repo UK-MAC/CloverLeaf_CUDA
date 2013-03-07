@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA timestep kernel
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details Calculates the minimum timestep on the mesh chunk based on the CFL
  *  condition, the velocity gradient and the velocity divergence. A safety
  *  factor is used to ensure numerical stability.

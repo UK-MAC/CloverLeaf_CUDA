@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA flux kernel
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details The edge volume fluxes are calculated based on the velocity fields.
  */
 

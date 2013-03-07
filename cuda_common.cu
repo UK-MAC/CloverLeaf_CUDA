@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA common file
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details Contains common elements for cuda kernels
  */
 

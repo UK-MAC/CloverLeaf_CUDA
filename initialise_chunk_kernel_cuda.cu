@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA driver for chunk initialisation.
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details Invokes the user specified chunk initialisation kernel.
  */
 

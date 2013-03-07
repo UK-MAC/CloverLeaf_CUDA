@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA field summary kernel
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details The total mass, internal energy, kinetic energy and volume weighted
  *  pressure for the chunk is calculated.
  */

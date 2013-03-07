@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA mesh chunk generation driver
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details Invoked the users specified chunk generator.
  */
 

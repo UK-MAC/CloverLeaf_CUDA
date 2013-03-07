@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA viscosity kernel.
- *  @author Michael Boulton NVIDA corp
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details Calculates an artificial viscosity using the Wilkin's method to
  *  smooth out shock front and prevent oscillations around discontinuities.
  *  Only cells in compression will have a non-zero value.

@@ -18,7 +18,7 @@
 
 /*
  *  @brief CUDA ideal gas kernel.
- *  @author Michael Boulton
+ *  @author Michael Boulton NVIDIA Corporation
  *  @details Calculates the pressure and sound speed for the mesh chunk using
  *  the ideal gas equation of state, with a fixed gamma of 1.4.
  */
