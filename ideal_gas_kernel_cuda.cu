@@ -31,16 +31,16 @@
 extern CloverleafCudaChunk chunk;
 
 __global__ void device_ideal_gas_kernel_cuda
-(int x_min,int x_max,int y_min,int y_max,
+(int x_min, int x_max, int y_min, int y_max,
 const double * __restrict const density,
 const double * __restrict const energy,
       double * __restrict const pressure,
       double * __restrict const soundspeed)
 {
     __kernel_indexes;
-    double v, pressurebyenergy, cell_pressure, pressurebyvolume, sound_speed_squared;
+    double v, pressurebyenergy, pressurebyvolume, sound_speed_squared;
 
-    if(row >= (y_min + 1) && row <= (y_max + 1)
+    if (row >= (y_min + 1) && row <= (y_max + 1)
     && column >= (x_min + 1) && column <= (x_max + 1))
     {
         v = 1.0 / density[THARR2D(0, 0, 0)];
@@ -59,8 +59,11 @@ const double * __restrict const energy,
 }
 
 extern "C" void ideal_gas_kernel_cuda_
-(int *x_min,int *x_max,int *y_min,int *y_max, int* predict,
-const double *density, const double *energy, double *pressure, double *soundspeed)
+(int *x_min, int *x_max, int *y_min, int *y_max, int* predict,
+const double *density,
+const double *energy,
+      double *pressure,
+      double *soundspeed)
 {
     chunk.ideal_gas_kernel(*predict);
 }
@@ -68,18 +71,20 @@ const double *density, const double *energy, double *pressure, double *soundspee
 void CloverleafCudaChunk::ideal_gas_kernel
 (int predict)
 {
-    _CUDA_BEGIN_PROFILE_name(device);
-    if(predict)
+    CUDA_BEGIN_PROFILE;
+
+    if (predict)
     {
         device_ideal_gas_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
         (x_min,x_max,y_min,y_max, density1, energy1, pressure, soundspeed);
-        errChk(__LINE__, __FILE__);
     }
     else
     {
         device_ideal_gas_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
         (x_min,x_max,y_min,y_max, density0, energy0, pressure, soundspeed);
-        errChk(__LINE__, __FILE__);
     }
-    _CUDA_END_PROFILE_name(device);
+    CUDA_ERR_CHECK;
+
+    CUDA_END_PROFILE;
 }
+

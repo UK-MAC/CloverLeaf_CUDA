@@ -26,7 +26,6 @@
 #include "ftocmacros.h"
 #include "advec_cell_cuda_kernels.cu"
 #include "cuda_common.cu"
-#include "omp.h"
 
 #include "chunk_cuda.cu"
 
@@ -40,20 +39,19 @@ const bool* vector,
 const double* vertexdx,
 const double* vertexdy,
 const double* volume,
-double* density1,
-double* energy1,
-double* mass_flux_x,
+      double* density1,
+      double* energy1,
+      double* mass_flux_x,
 const double* vol_flux_x,
-double* mass_flux_y,
+      double* mass_flux_y,
 const double* vol_flux_y,
-
-double* unused_array1,
-double* unused_array2,
-double* unused_array3,
-double* unused_array4,
-double* unused_array5,
-double* unused_array6,
-double* unused_array7)
+      double* unused_array1,
+      double* unused_array2,
+      double* unused_array3,
+      double* unused_array4,
+      double* unused_array5,
+      double* unused_array6,
+      double* unused_array7)
 {
     chunk.advec_cell_kernel(*dr, *swp_nmbr);
 }
@@ -61,9 +59,9 @@ double* unused_array7)
 void CloverleafCudaChunk::advec_cell_kernel
 (int dr, int swp_nmbr)
 {
+    CUDA_BEGIN_PROFILE;
 
-_CUDA_BEGIN_PROFILE_name(device);
-    if(dr == 1)
+    if (dr == 1)
     {
         device_pre_vol_kernel_x<<< num_blocks, BLOCK_SZ >>>
         (
@@ -74,7 +72,7 @@ _CUDA_BEGIN_PROFILE_name(device);
             vol_flux_x,
             vol_flux_y
         );
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
 
         device_ener_flux_kernel_x<<< num_blocks, BLOCK_SZ >>>
         (
@@ -89,7 +87,7 @@ _CUDA_BEGIN_PROFILE_name(device);
             vertexdx,
             mass_flux_x
         );
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
 
         device_advec_cell_kernel_x<<< num_blocks, BLOCK_SZ >>>
         (
@@ -103,9 +101,9 @@ _CUDA_BEGIN_PROFILE_name(device);
             work_array_2,
             mass_flux_x
         );
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
     }
-    else if(dr == 2)
+    else if (dr == 2)
     {
 
         device_pre_vol_kernel_y<<< num_blocks, BLOCK_SZ >>>
@@ -117,7 +115,7 @@ _CUDA_BEGIN_PROFILE_name(device);
             vol_flux_x,
             vol_flux_y
         );
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
 
         device_ener_flux_kernel_y<<< num_blocks, BLOCK_SZ >>>
         (
@@ -132,7 +130,7 @@ _CUDA_BEGIN_PROFILE_name(device);
             vertexdy,
             mass_flux_y
         );
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
 
         device_advec_cell_kernel_y<<< num_blocks, BLOCK_SZ >>>
         (
@@ -147,8 +145,9 @@ _CUDA_BEGIN_PROFILE_name(device);
             mass_flux_y
         );
 
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
     }
-_CUDA_END_PROFILE_name(device);
+
+    CUDA_END_PROFILE;
 }
 

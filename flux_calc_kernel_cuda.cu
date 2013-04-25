@@ -25,7 +25,6 @@
 #include "cuda_common.cu"
 #include "ftocmacros.h"
 #include <iostream>
-#include "omp.h"
 
 #include "chunk_cuda.cu"
 extern CloverleafCudaChunk chunk;
@@ -44,7 +43,7 @@ const double * __restrict const yvel1,
 {
     __kernel_indexes;
 
-    if(row >= (y_min + 1) && row <= (y_max + 1)
+    if (row >= (y_min + 1) && row <= (y_max + 1)
     && column >= (x_min + 1) && column <= (x_max + 1) + 1)
     {
         vol_flux_x[THARR2D(0, 0, 1)] = 0.25 * dt * xarea[THARR2D(0, 0, 1)]
@@ -52,7 +51,7 @@ const double * __restrict const yvel1,
             + xvel1[THARR2D(0, 0, 1)] + xvel1[THARR2D(0, 1, 1)]);
     }
 
-    if(row >= (y_min + 1) && row <= (y_max + 1) + 1
+    if (row >= (y_min + 1) && row <= (y_max + 1) + 1
     && column >= (x_min + 1) && column <= (x_max + 1))
     {
         vol_flux_y[THARR2D(0, 0, 0)] = 0.25 * dt * yarea[THARR2D(0, 0, 0)]
@@ -63,16 +62,16 @@ const double * __restrict const yvel1,
 }
 
 extern "C" void flux_calc_kernel_cuda_
-(int *xmin,int *xmax,int *ymin,int *ymax,
-double *dbyt,
+(int *xmin, int *xmax, int *ymin, int *ymax,
+      double *dbyt,
 const double *xarea,
 const double *yarea,
 const double *xvel0,
 const double *yvel0,
 const double *xvel1,
 const double *yvel1,
-double *vol_flux_x,
-double *vol_flux_y)
+      double *vol_flux_x,
+      double *vol_flux_y)
 {
     chunk.flux_calc_kernel(*dbyt);
 }
@@ -81,11 +80,13 @@ double *vol_flux_y)
 void CloverleafCudaChunk::flux_calc_kernel
 (double dbyt)
 {
-_CUDA_BEGIN_PROFILE_name(device);
+    CUDA_BEGIN_PROFILE;
+
     device_flux_calc_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, dbyt, xarea, yarea, xvel0, yvel0,
+    (x_min, x_max, y_min, y_max, dbyt, xarea, yarea, xvel0, yvel0,
         xvel1, yvel1, vol_flux_x, vol_flux_y);
-    errChk(__LINE__, __FILE__);
-_CUDA_END_PROFILE_name(device);
+    CUDA_ERR_CHECK;
+
+    CUDA_END_PROFILE;
 }
 

@@ -37,12 +37,11 @@ const double* __restrict const energy0,
 const double* __restrict const pressure,
 const double* __restrict const xvel0,
 const double* __restrict const yvel0,
-
-double* __restrict const vol,
-double* __restrict const mass,
-double* __restrict const ie,
-double* __restrict const ke,
-double* __restrict const press)
+      double* __restrict const vol,
+      double* __restrict const mass,
+      double* __restrict const ie,
+      double* __restrict const ke,
+      double* __restrict const press)
 {
     __kernel_indexes;
 
@@ -58,12 +57,12 @@ double* __restrict const press)
     press_shared[threadIdx.x] = 0.0;
     __syncthreads();
 
-    if(row >= (y_min + 1) && row <= (y_max + 1)
+    if (row >= (y_min + 1) && row <= (y_max + 1)
     && column >= (x_min + 1) && column <= (x_max + 1))
     {
         double vsqrd = 0.0;
 
-        //unrolled do loop
+        // unrolled do loop
         vsqrd += 0.25 * (xvel0[THARR2D(0, 0, 1)] * xvel0[THARR2D(0, 0, 1)]
                         +yvel0[THARR2D(0, 0, 1)] * yvel0[THARR2D(0, 0, 1)]);
 
@@ -82,17 +81,16 @@ double* __restrict const press)
         vol_shared[threadIdx.x] = cell_vol;
         mass_shared[threadIdx.x] = cell_mass;
         ie_shared[threadIdx.x] = cell_mass * energy0[THARR2D(0, 0, 0)];
-
         ke_shared[threadIdx.x] = cell_mass * 0.5 * vsqrd;
-
         press_shared[threadIdx.x] = cell_vol * pressure[THARR2D(0, 0, 0)];
 
     }
 
+    // because this is done for multiple values, it is quicker than using Reduce<...>
     __syncthreads();
-    for(int offset = BLOCK_SZ / 2; offset > 0; offset /= 2)
+    for (int offset = BLOCK_SZ / 2; offset > 0; offset /= 2)
     {
-        if(threadIdx.x < offset)
+        if (threadIdx.x < offset)
         {
             vol_shared[threadIdx.x] += vol_shared[threadIdx.x + offset];
             mass_shared[threadIdx.x] += mass_shared[threadIdx.x + offset];
@@ -119,29 +117,26 @@ const double* energy0,
 const double* pressure,
 const double* xvel0,
 const double* yvel0,
-
-double* vol,
-double* mass,
-double* ie,
-double* ke,
-double* press)
+      double* vol,
+      double* mass,
+      double* ie,
+      double* ke,
+      double* press)
 {
     chunk.field_summary_kernel(vol, mass, ie, ke, press);
 }
 
 void CloverleafCudaChunk::field_summary_kernel
-(double* vol, double* mass,
-double* ie, double* ke, double* press)
+(double* vol, double* mass, double* ie, double* ke, double* press)
 {
-    
-_CUDA_BEGIN_PROFILE_name(device);
+    CUDA_BEGIN_PROFILE;
+
     device_field_summary_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
     (x_min, x_max, y_min, y_max, volume, density0,
         energy0, pressure, xvel0, yvel0,
         work_array_1, work_array_2, work_array_3,
         work_array_4, work_array_5);
-    errChk(__LINE__, __FILE__);
-_CUDA_END_PROFILE_name(device);
+    CUDA_ERR_CHECK;
 
     *vol = thrust::reduce(reduce_ptr_1,
         reduce_ptr_1 + num_blocks, 0.0);
@@ -157,5 +152,7 @@ _CUDA_END_PROFILE_name(device);
 
     *press = thrust::reduce(reduce_ptr_5,
         reduce_ptr_5 + num_blocks, 0.0);
+
+    CUDA_END_PROFILE;
 }
 

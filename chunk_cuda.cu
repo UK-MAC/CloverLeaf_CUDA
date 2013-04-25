@@ -41,9 +41,9 @@
     /* mpi task */\
     int* in_task \
 
-#include "thrust/copy.h"
-
 #include "cuda_common.cu"
+
+#include "thrust/device_allocator.h"
 
 class CloverleafCudaChunk
 {
@@ -192,10 +192,6 @@ public:
     (INITIALISE_ARGS);
 
     CloverleafCudaChunk
-    (void)
-    {
-        ;
-    }
-
+    (void);
 };
 

@@ -77,9 +77,9 @@ const int depth)
         device_pack##face##Buffer<<< launch_sz, BLOCK_SZ >>> \
         (x_min, x_max, y_min, y_max, type, \
         dev_ptr, dev_##face##_send_buffer, depth); \
-        errChk(__LINE__, __FILE__); \
+        CUDA_ERR_CHECK; \
         cudaMemcpy(buffer, dev_##face##_send_buffer, buffer_size*sizeof(double), cudaMemcpyDeviceToHost); \
-        errChk(__LINE__, __FILE__); \
+        CUDA_ERR_CHECK; \
         cudaDeviceSynchronize();\
         break; \
 	}
@@ -132,13 +132,13 @@ const int depth)
     #define CALL_UNPACK(dev_ptr, type, face, dir)\
 	{ \
         cudaMemcpy(dev_##face##_recv_buffer, buffer, buffer_size*sizeof(double), cudaMemcpyHostToDevice); \
-        errChk(__LINE__, __FILE__); \
+        CUDA_ERR_CHECK; \
         cudaDeviceSynchronize();\
         const int launch_sz = (ceil((dir##_max+4+type.dir##_e)/static_cast<float>(BLOCK_SZ))) * depth; \
         device_unpack##face##Buffer<<< launch_sz, BLOCK_SZ >>> \
         (x_min, x_max, y_min, y_max, type, \
         dev_ptr, dev_##face##_recv_buffer, depth); \
-        errChk(__LINE__, __FILE__); \
+        CUDA_ERR_CHECK; \
         break; \
 	}
 

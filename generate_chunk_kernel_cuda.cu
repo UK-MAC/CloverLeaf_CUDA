@@ -43,7 +43,6 @@ const double* __restrict const celly,
       double* __restrict const energy0,
       double* __restrict const xvel0,
       double* __restrict const yvel0,
-
 const double* __restrict const state_density,
 const double* __restrict const state_energy,
 const double* __restrict const state_xvel,
@@ -54,19 +53,18 @@ const double* __restrict const state_ymin,
 const double* __restrict const state_ymax,
 const double* __restrict const state_radius,
 const int* __restrict const state_geometry,
-
 const int g_rect,
 const int g_circ,
 const int state)
 {
     __kernel_indexes;
 
-    if(row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    if (row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
     && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
     {
-        if(state_geometry[state] == g_rect)
+        if (state_geometry[state] == g_rect)
         {
-            if(vertexx[column] >= state_xmin[state]
+            if (vertexx[column] >= state_xmin[state]
             && vertexx[column] <  state_xmax[state]
             && vertexy[row]    >= state_ymin[state]
             && vertexy[row]    <  state_ymax[state])
@@ -88,10 +86,10 @@ const int state)
                 yvel0[THARR2D(1, 1, 1)] = state_yvel[state];
             }
         }
-        else if(state_geometry[state] == g_circ)
+        else if (state_geometry[state] == g_circ)
         {
             double radius = sqrt(cellx[column] * cellx[column] + celly[row] + celly[row]);
-            if(radius <= state_radius[state])
+            if (radius <= state_radius[state])
             {
                 energy0[THARR2D(0, 0, 0)] = state_energy[state];
                 density0[THARR2D(0, 0, 0)] = state_density[state];
@@ -126,7 +124,7 @@ const double* state_yvel)
 {
     __kernel_indexes;
 
-    if(row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    if (row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
     && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
     {
         energy0[THARR2D(0, 0, 0)] = state_energy[0];
@@ -146,9 +144,7 @@ const double* celly,
       double* energy0,
       double* xvel0,
       double* yvel0,
-
 const int* number_of_states,
-
 const double* state_density,
 const double* state_energy,
 const double* state_xvel,
@@ -159,7 +155,6 @@ const double* state_ymin,
 const double* state_ymax,
 const double* state_radius,
 const int* state_geometry,
-
 const int* g_rect,
 const int* g_circ)
 {
@@ -200,14 +195,17 @@ const int g_rect, const int g_circ)
     THRUST_ALLOC_ARRAY(radius, double);
     THRUST_ALLOC_ARRAY(geometry, int);
 
-_CUDA_BEGIN_PROFILE_name(device);
+    #undef THRUST_ALLOC_ARRAY
+
+    CUDA_BEGIN_PROFILE;
+
     device_generate_chunk_kernel_init_cuda<<< num_blocks, BLOCK_SZ >>>
     (x_min, x_max, y_min, y_max, 
         density0, energy0, xvel0, yvel0, 
         state_density_d, state_energy_d, state_xvel_d, state_yvel_d);
-    errChk(__LINE__, __FILE__);
+    CUDA_ERR_CHECK;
 
-    for(int state = 1; state < number_of_states; state++)
+    for (int state = 1; state < number_of_states; state++)
     {
         device_generate_chunk_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
         (x_min, x_max, y_min, y_max, 
@@ -215,9 +213,10 @@ _CUDA_BEGIN_PROFILE_name(device);
             state_density_d, state_energy_d, state_xvel_d,
             state_yvel_d, state_xmin_d, state_xmax_d, state_ymin_d, state_ymax_d,
             state_radius_d, state_geometry_d,  g_rect,  g_circ, state);
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
     }
-_CUDA_END_PROFILE_name(device);
+
+    CUDA_END_PROFILE;
 
     thrust::device_free(thr_state_density_d);
     thrust::device_free(thr_state_energy_d);
@@ -229,6 +228,5 @@ _CUDA_END_PROFILE_name(device);
     thrust::device_free(thr_state_ymax_d);
     thrust::device_free(thr_state_radius_d);
     thrust::device_free(thr_state_geometry_d);
-
 }
 

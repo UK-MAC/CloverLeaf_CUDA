@@ -24,7 +24,6 @@
 
 #include <iostream>
 #include "ftocmacros.h"
-#include "omp.h"
 #include "cuda_common.cu"
 #include "advec_mom_cuda_kernels.cu"
 
@@ -65,11 +64,12 @@ void CloverleafCudaChunk::advec_mom_kernel
 {
     int mom_sweep = direction + (2 * (sweep_number - 1));
 
-_CUDA_BEGIN_PROFILE_name(device);
+    CUDA_BEGIN_PROFILE;
 
     device_advec_mom_vol_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-    (x_min, x_max, y_min, y_max, mom_sweep, work_array_1, work_array_2, volume, vol_flux_x, vol_flux_y);
-    errChk(__LINE__, __FILE__);
+    (x_min, x_max, y_min, y_max, mom_sweep, work_array_1, work_array_2, volume,
+        vol_flux_x, vol_flux_y);
+    CUDA_ERR_CHECK;
 
     /*
     post_vol = work array 1
@@ -80,7 +80,7 @@ _CUDA_BEGIN_PROFILE_name(device);
     */
 
     double* vel1;
-    if(which_vel == 1)
+    if (which_vel == 1)
     {
         vel1 =  xvel1;
     }
@@ -89,43 +89,43 @@ _CUDA_BEGIN_PROFILE_name(device);
         vel1 =  yvel1;
     }
 
-    if(direction == 1)
+    if (direction == 1)
     {
         device_advec_mom_node_flux_post_x_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
         (x_min, x_max, y_min, y_max, work_array_2, work_array_3, mass_flux_x, work_array_1, density1);
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
 
         device_advec_mom_node_pre_x_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
         (x_min, x_max, y_min, y_max, work_array_2, work_array_3, work_array_4);
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
 
         device_advec_mom_flux_x_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
         (x_min, x_max, y_min, y_max, work_array_2, work_array_3, work_array_4, vel1, celldx, work_array_5);
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
 
         device_advec_mom_xvel_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
         (x_min, x_max, y_min, y_max, work_array_3, work_array_4, work_array_5, vel1);
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
     }
     else if (direction == 2)
     {
         device_advec_mom_node_flux_post_y_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
         (x_min, x_max, y_min, y_max, work_array_2, work_array_3, mass_flux_y, work_array_1, density1);
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
 
         device_advec_mom_node_pre_y_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
         (x_min, x_max, y_min, y_max, work_array_2, work_array_3, work_array_4);
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
 
         device_advec_mom_flux_y_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
         (x_min, x_max, y_min, y_max, work_array_2, work_array_3, work_array_4, vel1, celldy, work_array_5);
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
 
         device_advec_mom_yvel_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
         (x_min, x_max, y_min, y_max, work_array_3, work_array_4, work_array_5, vel1);
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
     }
 
-_CUDA_END_PROFILE_name(device);
+    CUDA_END_PROFILE;
 }
 

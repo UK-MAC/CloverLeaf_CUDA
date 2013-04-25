@@ -25,7 +25,6 @@
 
 #include <iostream>
 #include "ftocmacros.h"
-#include "omp.h"
 #include "cuda_common.cu"
 
 #include "chunk_cuda.cu"
@@ -51,7 +50,7 @@ const double* __restrict const yvel0,
     // prevent writing to *vel1, then read from it, then write to it again
     double xvel_temp, yvel_temp;
 
-    if(row >= (x_min + 1) && row <= (y_max + 1) + 1
+    if (row >= (x_min + 1) && row <= (y_max + 1) + 1
     && column >= (x_min + 1) && column <= (x_max + 1) + 1)
     {
         nodal_mass =
@@ -86,9 +85,10 @@ const double* __restrict const yvel0,
 }
 
 extern "C" void accelerate_kernel_cuda_
-(int *xmin,int *xmax,int *ymin,int *ymax,
+(int *xmin, int *xmax, int *ymin, int *ymax,
 double *dbyt,
-double *xarea,double *yarea,
+double *xarea,
+double *yarea,
 double *volume,
 double *density0,
 double *pressure,
@@ -105,12 +105,13 @@ double *unused_array)
 void CloverleafCudaChunk::accelerate_kernel
 (double dbyt)
 {
-_CUDA_BEGIN_PROFILE_name(device);
+    CUDA_BEGIN_PROFILE;
 
     device_accelerate_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
     (x_min, x_max, y_min, y_max, dbyt, xarea, yarea, volume, density0,
         pressure, viscosity, xvel0, yvel0, xvel1, yvel1);
-    errChk(__LINE__, __FILE__);
+    CUDA_ERR_CHECK;
 
-_CUDA_END_PROFILE_name(device);
+    CUDA_END_PROFILE;
 }
+

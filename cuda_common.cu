@@ -25,8 +25,10 @@
 #ifndef __CUDA_COMMON_INC
 #define __CUDA_COMMON_INC
 
-// size of workgroup/block
-#define BLOCK_SZ 256
+// size of workgroup/block - 256 seems to be optimal
+#ifndef BLOCK_SZ 
+    #define BLOCK_SZ 256
+#endif
 
 // number of bytes to allocate for x size array
 #define BUFSZX(x_extra)   \
@@ -44,9 +46,11 @@
     * ((y_max) + 4 + y_extra)       \
     * sizeof(double) )
 
-// access a volue in a 2d array given the x and y offset from current thread
-// index, adding or subtracting a bit more if it is one of the arrays with
-// bigger rows
+/*
+*  access a value in a 2d array given the x and y offset from current thread
+*  index, adding or subtracting a bit more if it is one of the arrays with
+*  bigger rows
+*/
 #define THARR2D(x_offset, y_offset, big_row)\
     ( glob_id                               \
     + (x_offset)                            \
@@ -82,48 +86,106 @@ enum {CELL_DATA, VERTEX_DATA, X_FACE_DATA, Y_FACE_DATA};
 
 /*******************/
 
+// disable checking for errors after kernel calls / memory allocation
+#ifdef NO_ERR_CHK
+
+// do nothing instead
+#define CUDA_ERR_CHECK ;
+
+#else
+
 #include <iostream>
-#include <vector>
-#include <algorithm>
-#include "omp.h"
-#include "ftocmacros.h"
 
-// for reduction in calc_dt and PdV
-#include "thrust/copy.h"
-#include "thrust/reduce.h"
-#include "thrust/fill.h"
-#include "thrust/functional.h"
-#include "thrust/device_allocator.h"
-#include "thrust/device_malloc.h"
+#define CUDA_ERR_CHECK errorHandler(__LINE__, __FILE__);
 
-/*******************/
+static const char* errorCodes
+(int err_code)
+{
+    switch(err_code)
+    {
+        case cudaSuccess: return "cudaSuccess";
+        case cudaErrorMissingConfiguration: return "cudaErrorMissingConfiguration";
+        case cudaErrorMemoryAllocation: return "cudaErrorMemoryAllocation";
+        case cudaErrorInitializationError: return "cudaErrorInitializationError";
+        case cudaErrorLaunchFailure: return "cudaErrorLaunchFailure";
+        case cudaErrorPriorLaunchFailure: return "cudaErrorPriorLaunchFailure";
+        case cudaErrorLaunchTimeout: return "cudaErrorLaunchTimeout";
+        case cudaErrorLaunchOutOfResources: return "cudaErrorLaunchOutOfResources";
+        case cudaErrorInvalidDeviceFunction: return "cudaErrorInvalidDeviceFunction";
+        case cudaErrorInvalidConfiguration: return "cudaErrorInvalidConfiguration";
+        case cudaErrorInvalidDevice: return "cudaErrorInvalidDevice";
+        case cudaErrorInvalidValue: return "cudaErrorInvalidValue";
+        case cudaErrorInvalidPitchValue: return "cudaErrorInvalidPitchValue";
+        case cudaErrorInvalidSymbol: return "cudaErrorInvalidSymbol";
+        case cudaErrorMapBufferObjectFailed: return "cudaErrorMapBufferObjectFailed";
+        case cudaErrorUnmapBufferObjectFailed: return "cudaErrorUnmapBufferObjectFailed";
+        case cudaErrorInvalidHostPointer: return "cudaErrorInvalidHostPointer";
+        case cudaErrorInvalidDevicePointer: return "cudaErrorInvalidDevicePointer";
+        case cudaErrorInvalidTexture: return "cudaErrorInvalidTexture";
+        case cudaErrorInvalidTextureBinding: return "cudaErrorInvalidTextureBinding";
+        case cudaErrorInvalidChannelDescriptor: return "cudaErrorInvalidChannelDescriptor";
+        case cudaErrorInvalidMemcpyDirection: return "cudaErrorInvalidMemcpyDirection";
+        case cudaErrorAddressOfConstant: return "cudaErrorAddressOfConstant";
+        case cudaErrorTextureFetchFailed: return "cudaErrorTextureFetchFailed";
+        case cudaErrorTextureNotBound: return "cudaErrorTextureNotBound";
+        case cudaErrorSynchronizationError: return "cudaErrorSynchronizationError";
+        case cudaErrorInvalidFilterSetting: return "cudaErrorInvalidFilterSetting";
+        case cudaErrorInvalidNormSetting: return "cudaErrorInvalidNormSetting";
+        case cudaErrorMixedDeviceExecution: return "cudaErrorMixedDeviceExecution";
+        case cudaErrorCudartUnloading: return "cudaErrorCudartUnloading";
+        case cudaErrorUnknown: return "cudaErrorUnknown";
+        case cudaErrorNotYetImplemented: return "cudaErrorNotYetImplemented";
+        case cudaErrorMemoryValueTooLarge: return "cudaErrorMemoryValueTooLarge";
+        case cudaErrorInvalidResourceHandle: return "cudaErrorInvalidResourceHandle";
+        case cudaErrorNotReady: return "cudaErrorNotReady";
+        case cudaErrorInsufficientDriver: return "cudaErrorInsufficientDriver";
+        case cudaErrorSetOnActiveProcess: return "cudaErrorSetOnActiveProcess";
+        case cudaErrorInvalidSurface: return "cudaErrorInvalidSurface";
+        case cudaErrorNoDevice: return "cudaErrorNoDevice";
+        case cudaErrorECCUncorrectable: return "cudaErrorECCUncorrectable";
+        case cudaErrorSharedObjectSymbolNotFound: return "cudaErrorSharedObjectSymbolNotFound";
+        case cudaErrorSharedObjectInitFailed: return "cudaErrorSharedObjectInitFailed";
+        case cudaErrorUnsupportedLimit: return "cudaErrorUnsupportedLimit";
+        case cudaErrorDuplicateVariableName: return "cudaErrorDuplicateVariableName";
+        case cudaErrorDuplicateTextureName: return "cudaErrorDuplicateTextureName";
+        case cudaErrorDuplicateSurfaceName: return "cudaErrorDuplicateSurfaceName";
+        case cudaErrorDevicesUnavailable: return "cudaErrorDevicesUnavailable";
+        case cudaErrorInvalidKernelImage: return "cudaErrorInvalidKernelImage";
+        case cudaErrorNoKernelImageForDevice: return "cudaErrorNoKernelImageForDevice";
+        case cudaErrorIncompatibleDriverContext: return "cudaErrorIncompatibleDriverContext";
+        case cudaErrorPeerAccessAlreadyEnabled: return "cudaErrorPeerAccessAlreadyEnabled";
+        case cudaErrorPeerAccessNotEnabled: return "cudaErrorPeerAccessNotEnabled";
+        case cudaErrorDeviceAlreadyInUse: return "cudaErrorDeviceAlreadyInUse";
+        case cudaErrorProfilerDisabled: return "cudaErrorProfilerDisabled";
+        case cudaErrorProfilerNotInitialized: return "cudaErrorProfilerNotInitialized";
+        case cudaErrorProfilerAlreadyStarted: return "cudaErrorProfilerAlreadyStarted";
+        case cudaErrorProfilerAlreadyStopped: return "cudaErrorProfilerAlreadyStopped";
+        case cudaErrorAssert: return "cudaErrorAssert";
+        case cudaErrorTooManyPeers: return "cudaErrorTooManyPeers";
+        case cudaErrorHostMemoryAlreadyRegistered: return "cudaErrorHostMemoryAlreadyRegistered";
+        case cudaErrorHostMemoryNotRegistered: return "cudaErrorHostMemoryNotRegistered";
+        case cudaErrorOperatingSystem: return "cudaErrorOperatingSystem";
+        case cudaErrorStartupFailure: return "cudaErrorStartupFailure";
+        case cudaErrorApiFailureBase: return "cudaErrorApiFailureBase";
+        default: return "Unknown error";
+    }
+}
 
-// lots of time is spent error checking - define this to stop checking for errors.
-#ifndef NO_ERR_CHK
-
-#ifdef _GNUC_
-void errChk(int, std::string const&) __attribute__((always_inline));
-#endif
-
-inline void errChk
+inline void errorHandler
 (int line_num, std::string const& file)
 {
     cudaDeviceSynchronize();
     int l_e = cudaGetLastError();
-    if(l_e != cudaSuccess)
+    if (cudaSuccess != l_e)
     {
         std::cout << "error on line " << line_num << " of ";
         std::cout << file << std::endl;
         std::cout << "return code " << l_e; 
+        std::cout << " (" << errorCodes(l_e) << ")";
         std::cout << std::endl;
         exit(l_e);
     }
 }
-
-#else
-
-// do nothing instead
-#define errChk(l, f) ;
 
 #endif //NO_ERR_CHK
 
@@ -131,22 +193,21 @@ inline void errChk
 #ifdef TIME_KERNELS
 
 // beginning of profiling bit
-#define _CUDA_BEGIN_PROFILE_name(x) \
-    double x##t_0, x##t_1;          \
-    x##t_0 = omp_get_wtime();
+#define CUDA_BEGIN_PROFILE \
+    double __t_0, __t_1;          \
+    __t_0 = MPI_Wtime();
 
 // end of profiling bit
-#define _CUDA_END_PROFILE_name(x)                   \
+#define CUDA_END_PROFILE \
     cudaDeviceSynchronize();                        \
-    x##t_1 = omp_get_wtime();                       \
-    std::cout << "[PROFILING] " << x##t_1 - x##t_0  \
-    << " to calculate block \"" << #x <<            \
-    "\" in " << __FILE__  <<std::endl;
+    __t_1 = MPI_Wtime();                       \
+    std::cout << "[PROFILING] " << __t_1 - __t_0  \
+    << " to calculate " << __FILE__  << std::endl;
 
 #else
 
-#define _CUDA_BEGIN_PROFILE_name(x) ;
-#define _CUDA_END_PROFILE_name(x) ;
+#define CUDA_BEGIN_PROFILE ;
+#define CUDA_END_PROFILE ;
 
 #endif // TIME_KERNELS
 
@@ -181,6 +242,9 @@ const static cell_info_t VERTEX_Y(1, 1,  1, -1, 0, 0, VERTEX_DATA);
 const static cell_info_t X_FACE(  1, 0, -1,  1, 1, 0, X_FACE_DATA);
 const static cell_info_t Y_FACE(  0, 1,  1, -1, 0, 1, Y_FACE_DATA);
 
+#include "ftocmacros.h"
+
+// callbacks for reductions
 __device__ inline static int sum_func (int x, int y) { return x + y; }
 __device__ inline static int min_func (int x, int y) { return MIN(x, y); }
 __device__ inline static int max_func (int x, int y) { return MAX(x, y); }

@@ -71,7 +71,6 @@ const double* array,
 const int depth)
 {
     int x_extra = type.x_e;
-    int y_extra = type.y_e;
     int x_inc = (type.grid_type == VERTEX_DATA || type.grid_type == X_FACE_DATA) ? 1 : 0;
     int y_inc = (type.grid_type == VERTEX_DATA || type.grid_type == Y_FACE_DATA) ? 1 : 0;
 
@@ -96,8 +95,6 @@ const double* left_buffer,
 const int depth)
 {
     int x_extra = type.x_e;
-    int y_extra = type.y_e;
-    int x_inc = (type.grid_type == VERTEX_DATA || type.grid_type == X_FACE_DATA) ? 1 : 0;
     int y_inc = (type.grid_type == VERTEX_DATA || type.grid_type == Y_FACE_DATA) ? 1 : 0;
 
     //__kernel_indexes;
@@ -123,8 +120,6 @@ const double* array,
 const int depth)
 {
     int x_extra = type.x_e;
-    int y_extra = type.y_e;
-    int x_inc = (type.grid_type == VERTEX_DATA || type.grid_type == X_FACE_DATA) ? 1 : 0;
     int y_inc = (type.grid_type == VERTEX_DATA || type.grid_type == Y_FACE_DATA) ? 1 : 0;
 
     //__kernel_indexes;
@@ -148,7 +143,6 @@ const double* right_buffer,
 const int depth)
 {
     int x_extra = type.x_e;
-    int y_extra = type.y_e;
     int x_inc = (type.grid_type == VERTEX_DATA || type.grid_type == X_FACE_DATA) ? 1 : 0;
     int y_inc = (type.grid_type == VERTEX_DATA || type.grid_type == Y_FACE_DATA) ? 1 : 0;
 
@@ -175,7 +169,6 @@ double* bottom_buffer,
 const int depth)
 {
     int x_extra = type.x_e;
-    int y_extra = type.y_e;
     int x_inc = (type.grid_type == VERTEX_DATA || type.grid_type == X_FACE_DATA) ? 1 : 0;
     int y_inc = (type.grid_type == VERTEX_DATA || type.grid_type == Y_FACE_DATA) ? 1 : 0;
     __kernel_indexes;
@@ -197,7 +190,6 @@ double* bottom_buffer,
 const int depth)
 {
     int x_extra = type.x_e;
-    int y_extra = type.y_e;
     int x_inc = (type.grid_type == VERTEX_DATA || type.grid_type == X_FACE_DATA) ? 1 : 0;
     int y_inc = (type.grid_type == VERTEX_DATA || type.grid_type == Y_FACE_DATA) ? 1 : 0;
     __kernel_indexes;
@@ -221,7 +213,6 @@ double* top_buffer,
 const int depth)
 {
     int x_extra = type.x_e;
-    int y_extra = type.y_e;
     int x_inc = (type.grid_type == VERTEX_DATA || type.grid_type == X_FACE_DATA) ? 1 : 0;
     int y_inc = (type.grid_type == VERTEX_DATA || type.grid_type == Y_FACE_DATA) ? 1 : 0;
     __kernel_indexes;
@@ -243,7 +234,6 @@ double* top_buffer,
 const int depth)
 {
     int x_extra = type.x_e;
-    int y_extra = type.y_e;
     int x_inc = (type.grid_type == VERTEX_DATA || type.grid_type == X_FACE_DATA) ? 1 : 0;
     int y_inc = (type.grid_type == VERTEX_DATA || type.grid_type == Y_FACE_DATA) ? 1 : 0;
     __kernel_indexes;

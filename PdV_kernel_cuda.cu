@@ -31,14 +31,12 @@
 #include "ftocmacros.h"
 #include <algorithm>
 
-#include "omp.h"
 
 #include "chunk_cuda.cu"
 extern CloverleafCudaChunk chunk;
 
 __global__ void device_PdV_cuda_kernel_predict
-(int x_min, int x_max, int y_min, int y_max, 
-double dt,
+(int x_min, int x_max, int y_min, int y_max, double dt,
          int * __restrict const error_condition,
 const double * __restrict const xarea,
 const double * __restrict const yarea,
@@ -56,8 +54,8 @@ const double * __restrict const yvel1)
 {
     __kernel_indexes;
 
-    __shared__ int err_cond_kernel[BLOCK_SZ];
-    err_cond_kernel[threadIdx.x] = 0;
+    __shared__ int err_condition_shared[BLOCK_SZ];
+    err_condition_shared[threadIdx.x] = 0;
 
     double volume_change;
     double recip_volume, energy_change, min_cell_volume,
@@ -95,13 +93,13 @@ const double * __restrict const yvel1)
             MIN(volume[THARR2D(0, 0, 0)] + right_flux - left_flux,
                 volume[THARR2D(0, 0, 0)] + top_flux - bottom_flux));
 
-        if(volume_change <= 0.0)
+        if (volume_change <= 0.0)
         {
-            err_cond_kernel[threadIdx.x] = 1;
+            err_condition_shared[threadIdx.x] = 1;
         }
-        if(min_cell_volume <= 0.0)
+        if (min_cell_volume <= 0.0)
         {
-            err_cond_kernel[threadIdx.x] = 2;
+            err_condition_shared[threadIdx.x] = 2;
         }
 
         recip_volume = 1.0/volume[THARR2D(0, 0, 0)];
@@ -114,26 +112,11 @@ const double * __restrict const yvel1)
         density1[THARR2D(0, 0, 0)] = density0[THARR2D(0, 0, 0)] * volume_change;
     }
 
-    Reduce< BLOCK_SZ/2 >::run(err_cond_kernel, error_condition, max_func);
-    
-    /*
-    __syncthreads();
-    for(int offset = blockDim.x / 2; offset > 0; offset /= 2)
-    {
-        if(threadIdx.x < offset)
-        {
-            err_cond_kernel[threadIdx.x] = MAX(err_cond_kernel[threadIdx.x],
-                err_cond_kernel[threadIdx.x + offset]);
-        }
-        __syncthreads();
-    }
-    error_condition[blockIdx.x] = err_cond_kernel[0];;
-    */
+    Reduce< BLOCK_SZ/2 >::run(err_condition_shared, error_condition, max_func);
 }
 
 __global__ void device_PdV_cuda_kernel_not_predict
-(int x_min, int x_max, int y_min, int y_max, 
-double dt,
+(int x_min, int x_max, int y_min, int y_max, double dt,
          int * __restrict const error_condition,
 const double * __restrict const xarea,
 const double * __restrict const yarea,
@@ -151,8 +134,8 @@ const double * __restrict const yvel1)
 {
     __kernel_indexes;
 
-    __shared__ int err_cond_kernel[BLOCK_SZ];
-    err_cond_kernel[threadIdx.x] = 0;
+    __shared__ int err_condition_shared[BLOCK_SZ];
+    err_condition_shared[threadIdx.x] = 0;
 
     double volume_change;
     double recip_volume, energy_change, min_cell_volume,
@@ -189,13 +172,13 @@ const double * __restrict const yvel1)
             MIN(volume[THARR2D(0, 0, 0)] + right_flux - left_flux,
                 volume[THARR2D(0, 0, 0)] + top_flux - bottom_flux));
 
-        if(volume_change <= 0.0)
+        if (volume_change <= 0.0)
         {
-            err_cond_kernel[threadIdx.x] = 1;
+            err_condition_shared[threadIdx.x] = 1;
         }
-        if(min_cell_volume <= 0.0)
+        if (min_cell_volume <= 0.0)
         {
-            err_cond_kernel[threadIdx.x] = 2;
+            err_condition_shared[threadIdx.x] = 2;
         }
 
         recip_volume = 1.0/volume[THARR2D(0, 0, 0)];
@@ -206,30 +189,17 @@ const double * __restrict const yvel1)
 
         energy1[THARR2D(0, 0, 0)] = energy0[THARR2D(0, 0, 0)] - energy_change;
         density1[THARR2D(0, 0, 0)] = density0[THARR2D(0, 0, 0)] * volume_change;
-
     }
 
-    Reduce< BLOCK_SZ/2 >::run(err_cond_kernel, error_condition, max_func);
-    
-    /*
-    __syncthreads();
-    for(int offset = blockDim.x / 2; offset > 0; offset /= 2)
-    {
-        if(threadIdx.x < offset)
-        {
-            err_cond_kernel[threadIdx.x] = MAX(err_cond_kernel[threadIdx.x],
-                err_cond_kernel[threadIdx.x + offset]);
-        }
-        __syncthreads();
-    }
-    error_condition[blockIdx.x] = err_cond_kernel[0];;
-    */
+    Reduce< BLOCK_SZ/2 >::run(err_condition_shared, error_condition, max_func);
 }
 
 extern "C" void pdv_kernel_cuda_
-(int *errorcondition,int *prdct,
-int *xmin,int *xmax,int *ymin,int *ymax,double *dtbyt,
-double *xarea,double *yarea,double *volume,
+(int *error_condition, int *prdct,
+int *xmin, int *xmax, int *ymin, int *ymax, double *dtbyt,
+double *xarea,
+double *yarea,
+double *volume,
 double *density0,
 double *density1,
 double *energy0,
@@ -242,22 +212,22 @@ double *yvel0,
 double *yvel1,
 double *unused_array)
 {
-    chunk.PdV_kernel(errorcondition, *prdct, *dtbyt);
+    chunk.PdV_kernel(error_condition, *prdct, *dtbyt);
 }
 
 void CloverleafCudaChunk::PdV_kernel
 (int* error_condition, int predict, double dt)
 {
-    _CUDA_BEGIN_PROFILE_name(device);
+    CUDA_BEGIN_PROFILE;
 
-    if(predict)
+    if (predict)
     {
         device_PdV_cuda_kernel_predict<<< num_blocks, BLOCK_SZ >>>
         (x_min, x_max, y_min, y_max, dt, pdv_reduce_array,
             xarea, yarea, volume, density0, density1,
             energy0, energy1, pressure, viscosity,
             xvel0, yvel0, xvel1, yvel1);
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
     }
     else
     {
@@ -266,19 +236,19 @@ void CloverleafCudaChunk::PdV_kernel
             xarea, yarea, volume, density0, density1,
             energy0, energy1, pressure, viscosity,
             xvel0, yvel0, xvel1, yvel1);
-        errChk(__LINE__, __FILE__);
+        CUDA_ERR_CHECK;
     }
 
-    _CUDA_END_PROFILE_name(device);
-
-    int err_cond = *thrust::max_element(reduce_pdv,
+    *error_condition = *thrust::max_element(reduce_pdv,
         reduce_pdv + num_blocks);
 
-    if(err_cond == 1)
+    CUDA_END_PROFILE;
+
+    if (1 == *error_condition)
     {
         std::cerr << "Negative volume in PdV kernel" << std::endl;
     }
-    else if(err_cond == 2)
+    else if (2 == *error_condition)
     {
         std::cerr << "Negative cell volume in PdV kernel" << std::endl;
     }

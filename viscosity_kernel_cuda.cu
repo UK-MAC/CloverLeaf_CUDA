@@ -27,14 +27,13 @@
 
 #include <iostream>
 #include "ftocmacros.h"
-#include "omp.h"
 #include "cuda_common.cu"
 
 #include "chunk_cuda.cu"
 extern CloverleafCudaChunk chunk;
 
 __global__ void device_viscosity_kernel_cuda
-(int x_min,int x_max,int y_min,int y_max,
+(int x_min, int x_max, int y_min, int y_max,
 const double * __restrict const celldx,
 const double * __restrict const celldy,
 const double * __restrict const density0,
@@ -48,7 +47,7 @@ const double * __restrict const yvel0)
     double ugrad, vgrad, grad2, pgradx, pgrady, pgradx2, pgrady2,
         grad, ygrad, pgrad, xgrad, div, strain2, limiter;
 
-    if(row >= (y_min + 1) && row <= (y_max + 1)
+    if (row >= (y_min + 1) && row <= (y_max + 1)
     && column >= (x_min + 1) && column <= (x_max + 1))
     {
         ugrad = (xvel0[THARR2D(1, 0, 1)] + xvel0[THARR2D(1, 1, 1)])
@@ -77,7 +76,7 @@ const double * __restrict const yvel0)
                 + (strain2 * pgradx * pgrady))
                 / MAX(pgradx2 + pgrady2, 1.0e-16);
 
-        if(limiter > 0 || div >= 0.0)
+        if (limiter > 0 || div >= 0.0)
         {
             viscosity[THARR2D(0,0,0)] = 0.0;
         }
@@ -99,12 +98,12 @@ const double * __restrict const yvel0)
 }
 
 extern "C" void viscosity_kernel_cuda_
-(int *xmin,int *x_max,int *ymin,int *y_max,
+(int *xmin, int *x_max, int *ymin, int *y_max,
 const double *celldx,
 const double *celldy,
 const double *density0,
 const double *pressure,
-double *viscosity,
+      double *viscosity,
 const double *xvel0,
 const double *yvel0)
 {
@@ -114,10 +113,13 @@ const double *yvel0)
 void CloverleafCudaChunk::viscosity_kernel
 (void)
 {
-_CUDA_BEGIN_PROFILE_name(device);
+    CUDA_BEGIN_PROFILE;
+
     device_viscosity_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-    (x_min, x_max, y_min, y_max, celldx, celldy, density0, pressure, viscosity, xvel0, yvel0);
-    errChk(__LINE__, __FILE__);
-_CUDA_END_PROFILE_name(device);
+    (x_min, x_max, y_min, y_max, celldx, celldy, density0, pressure, viscosity,
+        xvel0, yvel0);
+    CUDA_ERR_CHECK;
+
+    CUDA_END_PROFILE;
 }
 

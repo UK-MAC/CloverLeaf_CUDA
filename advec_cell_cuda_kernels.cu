@@ -51,10 +51,10 @@ const double* __restrict const vol_flux_y)
 {
     __kernel_indexes;
 
-    if(row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    if (row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
     && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
     {
-        if(swp_nmbr == 1)
+        if (swp_nmbr == 1)
         {
             pre_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
                 +(vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)]
@@ -90,11 +90,11 @@ const double* __restrict const vertexdx,
     //  +++++++++++++++++++++
     //  +++++++++++++++++++++
     //
-    if(row >= (y_min + 1) && row <= (y_max + 1)
+    if (row >= (y_min + 1) && row <= (y_max + 1)
     && column >= (x_min + 1) && column <= (x_max + 1) + 2)
     {
         // if flowing right
-        if(vol_flux_x[THARR2D(0, 0, 1)] > 0.0)
+        if (vol_flux_x[THARR2D(0, 0, 1)] > 0.0)
         {
             upwind = -2;
             donor = -1;
@@ -118,7 +118,7 @@ const double* __restrict const vertexdx,
         diffuw = density1[THARR2D(donor, 0, 0)] - density1[THARR2D(upwind, 0, 0)];
         diffdw = density1[THARR2D(downwind, 0, 0)] - density1[THARR2D(donor, 0, 0)];
 
-        if(diffuw * diffdw > 0.0)
+        if (diffuw * diffdw > 0.0)
         {
             limiter = (1.0 - sigmat) * SIGN(1.0, diffdw)
                 * MIN(fabs(diffuw), MIN(fabs(diffdw), one_by_six
@@ -137,7 +137,7 @@ const double* __restrict const vertexdx,
         diffuw = energy1[THARR2D(donor, 0, 0)] - energy1[THARR2D(upwind, 0, 0)];
         diffdw = energy1[THARR2D(downwind, 0, 0)] - energy1[THARR2D(donor, 0, 0)];
 
-        if(diffuw * diffdw > 0.0)
+        if (diffuw * diffdw > 0.0)
         {
             limiter = (1.0 - sigmam) * SIGN(1.0, diffdw)
                 * MIN(fabs(diffuw), MIN(fabs(diffdw), one_by_six
@@ -169,7 +169,7 @@ const double* __restrict const mass_flux_x)
     //  +++++++++++++++++++++
     //  +++++++++++++++++++++
     //
-    if(row >= (y_min + 1) && row <= (y_max + 1)
+    if (row >= (y_min + 1) && row <= (y_max + 1)
     && column >= (x_min + 1) && column <= (x_max + 1))
     {
         pre_mass = density1[THARR2D(0, 0, 0)] * pre_vol[THARR2D(0, 0, 1)];
@@ -204,10 +204,10 @@ const double* __restrict const vol_flux_y)
 {
     __kernel_indexes;
 
-    if(row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    if (row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
     && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
     {
-        if(swp_nmbr == 1)
+        if (swp_nmbr == 1)
         {
             pre_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
                 +(vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)]
@@ -242,11 +242,11 @@ const double* __restrict const vertexdy,
     //  ++xxxxxxxxxxxxxxxxx++
     //  ++xxxxxxxxxxxxxxxxx++
     //
-    if(row >= (y_min + 1) && row <= (y_max + 1) + 2
+    if (row >= (y_min + 1) && row <= (y_max + 1) + 2
     && column >= (x_min + 1) && column <= (x_max + 1))
     {
         // if flowing right
-        if(vol_flux_y[THARR2D(0, 0, 0)] > 0.0)
+        if (vol_flux_y[THARR2D(0, 0, 0)] > 0.0)
         {
             upwind = -2;
             donor = -1;
@@ -272,7 +272,7 @@ const double* __restrict const vertexdy,
         diffuw = density1[THARR2D(0, donor, 0)] - density1[THARR2D(0, upwind, 0)];
         diffdw = density1[THARR2D(0, downwind, 0)] - density1[THARR2D(0, donor, 0)];
 
-        if(diffuw * diffdw > 0.0)
+        if (diffuw * diffdw > 0.0)
         {
             limiter = (1.0 - sigmat) * SIGN(1.0, diffdw)
                 * MIN(fabs(diffuw), MIN(fabs(diffdw), one_by_six
@@ -291,7 +291,7 @@ const double* __restrict const vertexdy,
         diffuw = energy1[THARR2D(0, donor, 0)] - energy1[THARR2D(0, upwind, 0)];
         diffdw = energy1[THARR2D(0, downwind, 0)] - energy1[THARR2D(0, donor, 0)];
 
-        if(diffuw * diffdw > 0.0)
+        if (diffuw * diffdw > 0.0)
         {
             limiter = (1.0 - sigmam) * SIGN(1.0, diffdw)
                 * MIN(fabs(diffuw), MIN(fabs(diffdw), one_by_six
@@ -323,7 +323,7 @@ const double* __restrict const mass_flux_y)
     //  +++++++++++++++++++++
     //  +++++++++++++++++++++
     //
-    if(row >= (y_min + 1) && row <= (y_max + 1)
+    if (row >= (y_min + 1) && row <= (y_max + 1)
     && column >= (x_min + 1) && column <= (x_max + 1))
     {
         pre_mass = density1[THARR2D(0, 0, 0)] * pre_vol[THARR2D(0, 0, 1)];

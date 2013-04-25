@@ -57,10 +57,10 @@ CFLAGS_          = -O2
 # flags for nvcc
 # set NV_ARCH to select the correct one
 CODE_GEN_FERMI=-gencode arch=compute_20,code=sm_21
-CODE_GEN_KEPLER=-gencode arch=compute_30,code=sm_35
+CODE_GEN_KEPLER=-gencode arch=compute_30,code=sm_30
 
 # requires CUDA_HOME to be set - not the same on all machines
-NV_FLAGS=-O2 -w -c -I $(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -DNO_ERR_CHK
+NV_FLAGS=-O2 -I$(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -DNO_ERR_CHK
 
 ifdef DEBUG
   FLAGS_INTEL     = -O0 -g -debug all -check all -traceback -check noarg_temp_created
@@ -95,25 +95,6 @@ FLAGS=$(FLAGS_$(COMPILER)) $(OMP) $(I3E) $(OPTIONS) $(RESIDENT_FLAG)
 CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP) $(I3E) $(C_OPTIONS) -c
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
-
-CUDA_FILES=\
-	mpi_transfers_cuda.o\
-	advec_cell_kernel_cuda.o\
-	advec_mom_kernel_cuda.o\
-	generate_chunk_kernel_cuda.o\
-	reset_field_kernel_cuda.o\
-	viscosity_kernel_cuda.o\
-	initialise_chunk_kernel_cuda.o\
-	revert_kernel_cuda.o\
-	chunk_cuda.o\
-	flux_calc_kernel_cuda.o\
-	init_cuda.o\
-	accelerate_kernel_cuda.o\
-	calc_dt_kernel_cuda.o\
-	field_summary_kernel_cuda.o\
-	PdV_kernel_cuda.o\
-	ideal_gas_kernel_cuda.o\
-	update_halo_kernel_cuda.o
 
 all: clover_leaf
 	rm -f *.o *.mod *genmod* *.lst
@@ -191,10 +172,29 @@ c_lover:
 	advec_cell_kernel_c.c		\
 	timer_c.c            
 
+CUDA_FILES=\
+	mpi_transfers_cuda.o\
+	advec_cell_kernel_cuda.o\
+	advec_mom_kernel_cuda.o\
+	generate_chunk_kernel_cuda.o\
+	reset_field_kernel_cuda.o\
+	viscosity_kernel_cuda.o\
+	initialise_chunk_kernel_cuda.o\
+	revert_kernel_cuda.o\
+	chunk_cuda.o\
+	flux_calc_kernel_cuda.o\
+	init_cuda.o\
+	accelerate_kernel_cuda.o\
+	calc_dt_kernel_cuda.o\
+	field_summary_kernel_cuda.o\
+	PdV_kernel_cuda.o\
+	ideal_gas_kernel_cuda.o\
+	update_halo_kernel_cuda.o
+
 cuda_clover: $(CUDA_FILES)
 
 %.o: %.cu 
-	nvcc $(NV_FLAGS) $<
+	nvcc $(NV_FLAGS) -c $<
 
 clean:
 	rm -f *.o *.mod *genmod* *.lst
