@@ -2,7 +2,7 @@
 
 This is an example to make Cloverleaf on a Cray machine:
 
-C_MPI_COMPILER=cc MPI_COMPILER=ftn make COMPILER=CRAY NV_ARCH=FERMI -j 6
+make COMPILER=CRAY NV_ARCH=FERMI -j 6 C_MPI_COMPILER=cc MPI_COMPILER=ftn 
 
 * COMPILER is the same as with the other implementations.
 * NV_ARCH is the architecture - FERMI or KEPLER only, must be specified because of memory limitations of shared memory when doing reductions.
