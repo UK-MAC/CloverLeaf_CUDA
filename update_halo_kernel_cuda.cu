@@ -25,7 +25,8 @@
  *  reflective.
  */
 
-
+#include "mpi.h"
+#include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
 
@@ -43,16 +44,16 @@ extern CloverleafCudaChunk chunk;
 
 __global__ void device_update_halo_kernel_bottom_cuda
 (int x_min, int x_max, int y_min, int y_max,
-cell_info_t type,
+cell_info_t grid_type,
 double* cur_array,
 int depth)
 {
-    int x_extra = type.x_e;
-    int y_invert = type.y_i;
+    int x_extra = grid_type.x_e;
+    int y_invert = grid_type.y_i;
     __kernel_indexes;
 
     // offset by 1 if it is anything but a CELL grid
-    int b_offset = (type.grid_type != CELL_DATA) ? 1 : 0;
+    int b_offset = (grid_type.grid_type != CELL_DATA) ? 1 : 0;
 
     if (column >= 2 - depth && column <= (x_max + 1) + x_extra + depth)
     {
@@ -72,14 +73,14 @@ int depth)
 
 __global__ void device_update_halo_kernel_top_cuda
 (int x_min, int x_max, int y_min, int y_max,
-cell_info_t type,
+cell_info_t grid_type,
 double* cur_array,
 int depth)
 {
-    int x_extra = type.x_e;
-    int y_extra = type.y_e;
-    int y_invert = type.y_i;
-    int x_face = type.x_f;
+    int x_extra = grid_type.x_e;
+    int y_extra = grid_type.y_e;
+    int y_invert = grid_type.y_i;
+    int x_face = grid_type.x_f;
     __kernel_indexes;
 
     // if x face data, offset source/dest by - 1
@@ -99,16 +100,16 @@ int depth)
 
 __global__ void device_update_halo_kernel_left_cuda
 (int x_min, int x_max, int y_min, int y_max,
-cell_info_t type,
+cell_info_t grid_type,
 double* cur_array,
 int depth)
 {
-    int x_extra = type.x_e;
-    int y_extra = type.y_e;
-    int x_invert = type.x_i;
+    int x_extra = grid_type.x_e;
+    int y_extra = grid_type.y_e;
+    int x_invert = grid_type.x_i;
 
     // offset by 1 if it is anything but a CELL grid
-    int l_offset = (type.grid_type != CELL_DATA) ? 1 : 0;
+    int l_offset = (grid_type.grid_type != CELL_DATA) ? 1 : 0;
 
     // special indexes for specific depth
     const int glob_id = threadIdx.x + blockIdx.x * blockDim.x;
@@ -126,14 +127,14 @@ int depth)
 
 __global__ void device_update_halo_kernel_right_cuda
 (int x_min, int x_max, int y_min, int y_max,
-cell_info_t type,
+cell_info_t grid_type,
 double* cur_array,
 int depth)
 {
-    int x_extra = type.x_e;
-    int y_extra = type.y_e;
-    int x_invert = type.x_i;
-    int y_face = type.y_f;
+    int x_extra = grid_type.x_e;
+    int y_extra = grid_type.y_e;
+    int x_invert = grid_type.x_i;
+    int y_face = grid_type.y_f;
 
     // offset source by -1 if its a y face
     int y_f_offset = (y_face) ? 1 : 0;
@@ -152,20 +153,20 @@ int depth)
 
 void update_array
 (int x_min, int x_max, int y_min, int y_max,
-cell_info_t const& type,
+cell_info_t const& grid_type,
 const int* chunk_neighbours,
 double* cur_array_d,
 int depth)
 {
-    #define CHECK_LAUNCH(face, dir)                             \
-    if (chunk_neighbours[CHUNK_ ## face] == EXTERNAL_FACE)      \
-    {                                                           \
-        const int launch_sz = (ceil((dir##_max+4+type.dir##_e)  \
-            /static_cast<float>(BLOCK_SZ))) * depth;            \
-        device_update_halo_kernel_##face##_cuda                 \
-        <<< launch_sz, BLOCK_SZ >>>                             \
-        (x_min, x_max, y_min, y_max, type, cur_array_d, depth); \
-        CUDA_ERR_CHECK;                                         \
+    #define CHECK_LAUNCH(face, dir)                                 \
+    if (EXTERNAL_FACE == chunk_neighbours[CHUNK_ ## face])          \
+    {                                                               \
+        const int launch_sz = (ceil((dir##_max+4+grid_type.dir##_e) \
+            /static_cast<float>(BLOCK_SZ))) * depth;                \
+        device_update_halo_kernel_##face##_cuda                     \
+        <<< launch_sz, BLOCK_SZ >>>                                 \
+        (x_min, x_max, y_min, y_max, grid_type, cur_array_d, depth);\
+        CUDA_ERR_CHECK;                                             \
     }
 
     CHECK_LAUNCH(bottom, x);
@@ -181,21 +182,21 @@ extern "C" void update_halo_kernel_cuda_
 int* left, int* bottom, int* right, int* top,
 int* left_boundary, int* bottom_boundary, int* right_boundary, int* top_boundary,
 const int* chunk_neighbours,
-      double* density0,
-      double* energy0,
-      double* pressure,
-      double* viscosity,
-      double* soundspeed,
-      double* density1,
-      double* energy1,
-      double* xvel0,
-      double* yvel0,
-      double* xvel1,
-      double* yvel1,
-      double* vol_flux_x,
-      double* vol_flux_y,
-      double* mass_flux_x,
-      double* mass_flux_y,
+double* density0,
+double* energy0,
+double* pressure,
+double* viscosity,
+double* soundspeed,
+double* density1,
+double* energy1,
+double* xvel0,
+double* yvel0,
+double* xvel1,
+double* yvel1,
+double* vol_flux_x,
+double* vol_flux_y,
+double* mass_flux_x,
+double* mass_flux_y,
 const int* fields,
 const int* depth)
 {
@@ -209,11 +210,11 @@ const int* chunk_neighbours)
 {
     CUDA_BEGIN_PROFILE;
 
-    #define HALO_UPDATE_RESIDENT(arr, type)         \
-    {if (1 == fields[FIELD_ ## arr])                \
-    {                                               \
-        update_array(x_min, x_max, y_min, y_max,    \
-            type, chunk_neighbours, arr, depth);    \
+    #define HALO_UPDATE_RESIDENT(arr, grid_type)        \
+    {if (1 == fields[FIELD_ ## arr])                    \
+    {                                                   \
+        update_array(x_min, x_max, y_min, y_max,        \
+            grid_type, chunk_neighbours, arr, depth);   \
     }}
 
     HALO_UPDATE_RESIDENT(density0, CELL);

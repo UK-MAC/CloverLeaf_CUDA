@@ -1,3 +1,28 @@
+!Crown Copyright 2012 AWE.
+!
+! This file is part of CloverLeaf.
+!
+! CloverLeaf is free software: you can redistribute it and/or modify it under 
+! the terms of the GNU General Public License as published by the 
+! Free Software Foundation, either version 3 of the License, or (at your option) 
+! any later version.
+!
+! CloverLeaf is distributed in the hope that it will be useful, but 
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+! details.
+!
+! You should have received a copy of the GNU General Public License along with 
+! CloverLeaf. If not, see http://www.gnu.org/licenses/.
+
+!>  @brief Holds the high level Fortran data types
+!>  @author Wayne Gaudin
+!>  @details The high level data types used to store the mesh and field data
+!>  are defined here.
+!>
+!>  Also the global variables used for defining the input and controlling the
+!>  scheme are defined here.
+
 MODULE definitions_module
 
    USE data_module
@@ -45,9 +70,29 @@ MODULE definitions_module
 
    LOGICAL      :: use_fortran_kernels
    LOGICAL      :: use_C_kernels
-   LOGICAL      :: use_OA_kernels
-   LOGICAL      :: use_CUDA_kernels
+   LOGICAL      :: use_cuda_kernels
+
    LOGICAL      :: use_vector_loops ! Some loops work better in serial depending on the hardware
+
+   LOGICAL      :: profiler_on ! Internal code profiler to make comparisons across systems easier
+
+   TYPE profiler_type
+     REAL(KIND=8)       :: timestep        &
+                          ,acceleration    &
+                          ,PdV             &
+                          ,cell_advection  &
+                          ,mom_advection   &
+                          ,viscosity       &
+                          ,ideal_gas       &
+                          ,visit           &
+                          ,summary         &
+                          ,reset           &
+                          ,revert          &
+                          ,flux            &
+                          ,halo_exchange
+                     
+   END TYPE profiler_type
+   TYPE(profiler_type)  :: profiler
 
    REAL(KIND=8) :: end_time
 
@@ -84,14 +129,13 @@ MODULE definitions_module
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: yvel0,yvel1
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vol_flux_x,mass_flux_x
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vol_flux_y,mass_flux_y
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array1 !node_flux
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array2 !node_mass_post
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array3 !node_mass_pre
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array4 !advec_vel
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array5 !mom_flux
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array6 !pre_vol
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array7 !post_vol
-
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array1 !node_flux, stepbymass, volume_change, pre_vol
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array2 !node_mass_post, post_vol
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array3 !node_mass_pre,pre_mass
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array4 !advec_vel, post_mass
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array5 !mom_flux, advec_vol
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array6 !pre_vol, post_ener
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array7 !post_vol, ener_flux
 
      INTEGER         :: left            &
                        ,right           &

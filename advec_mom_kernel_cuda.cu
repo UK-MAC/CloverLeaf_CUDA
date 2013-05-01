@@ -22,6 +22,7 @@
  *  @details CUDA momentum advection driver.
  */
 
+#include "mpi.h"
 #include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
@@ -40,15 +41,13 @@ const double *mass_flux_y,
 const double *vol_flux_y,
 const double *volume,
 const double *density1,
-
-double* unused_array1,
-double* unused_array2,
-double* unused_array3,
-double* unused_array4,
-double* unused_array5,
-double* unused_array6,
-double* unused_array7,
-
+      double* unused_array1,
+      double* unused_array2,
+      double* unused_array3,
+      double* unused_array4,
+      double* unused_array5,
+      double* unused_array6,
+      double* unused_array7,
 const double *celldx,
 const double *celldy,
 int *whch_vl,
@@ -92,7 +91,8 @@ void CloverleafCudaChunk::advec_mom_kernel
     if (direction == 1)
     {
         device_advec_mom_node_flux_post_x_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, mass_flux_x, work_array_1, density1);
+        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, mass_flux_x,
+            work_array_1, density1);
         CUDA_ERR_CHECK;
 
         device_advec_mom_node_pre_x_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
@@ -100,17 +100,20 @@ void CloverleafCudaChunk::advec_mom_kernel
         CUDA_ERR_CHECK;
 
         device_advec_mom_flux_x_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, work_array_4, vel1, celldx, work_array_5);
+        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, work_array_4,
+            vel1, celldx, work_array_5);
         CUDA_ERR_CHECK;
 
         device_advec_mom_xvel_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_3, work_array_4, work_array_5, vel1);
+        (x_min, x_max, y_min, y_max, work_array_3, work_array_4, work_array_5,
+            vel1);
         CUDA_ERR_CHECK;
     }
     else if (direction == 2)
     {
         device_advec_mom_node_flux_post_y_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, mass_flux_y, work_array_1, density1);
+        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, mass_flux_y,
+            work_array_1, density1);
         CUDA_ERR_CHECK;
 
         device_advec_mom_node_pre_y_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
@@ -118,11 +121,13 @@ void CloverleafCudaChunk::advec_mom_kernel
         CUDA_ERR_CHECK;
 
         device_advec_mom_flux_y_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, work_array_4, vel1, celldy, work_array_5);
+        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, work_array_4,
+            vel1, celldy, work_array_5);
         CUDA_ERR_CHECK;
 
         device_advec_mom_yvel_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_3, work_array_4, work_array_5, vel1);
+        (x_min, x_max, y_min, y_max, work_array_3, work_array_4, work_array_5,
+            vel1);
         CUDA_ERR_CHECK;
     }
 

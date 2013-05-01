@@ -26,11 +26,12 @@
  */
 
 
+#include "mpi.h"
 #include <iostream>
 #include "cuda_common.cu"
 #include "ftocmacros.h"
-#include <algorithm>
 
+#include <algorithm>
 
 #include "chunk_cuda.cu"
 extern CloverleafCudaChunk chunk;

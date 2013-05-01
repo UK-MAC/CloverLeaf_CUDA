@@ -73,9 +73,9 @@ bottom_boundary(*in_bottom_boundary),
 task(*in_task),
 num_blocks((((*in_x_max)+6)*((*in_y_max)+6))/BLOCK_SZ)
 {
-    #define CUDA_ARRAY_ALLOC(arr, size)                              \
-        cudaMalloc((void**) &arr, size);                            \
-        cudaDeviceSynchronize();   \
+    #define CUDA_ARRAY_ALLOC(arr, size)     \
+        cudaMalloc((void**) &arr, size);    \
+        cudaDeviceSynchronize();            \
         CUDA_ERR_CHECK;
 
     CUDA_ARRAY_ALLOC(volume, BUFSZ2D(0, 0));

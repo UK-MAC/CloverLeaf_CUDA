@@ -32,12 +32,15 @@ SUBROUTINE reset_field()
 
   INTEGER :: c
 
+  REAL(KIND=8) :: kernel_time,timer
+
+  IF(profiler_on) kernel_time=timer()
   DO c=1,number_of_chunks
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
 
-      IF(use_cuda_kernels)THEN
-        CALL reset_field_kernel_cuda(chunks(c)%field%x_min,   &
+      IF(use_fortran_kernels)THEN
+        CALL reset_field_kernel(chunks(c)%field%x_min,   &
                               chunks(c)%field%x_max,     &
                               chunks(c)%field%y_min,     &
                               chunks(c)%field%y_max,     &
@@ -49,9 +52,8 @@ SUBROUTINE reset_field()
                               chunks(c)%field%xvel1,     &
                               chunks(c)%field%yvel0,     &
                               chunks(c)%field%yvel1      )
-      ELSE &
-      IF(use_fortran_kernels)THEN
-        CALL reset_field_kernel(chunks(c)%field%x_min,   &
+      ELSEIF(use_cuda_kernels)THEN
+        CALL reset_field_kernel_cuda(chunks(c)%field%x_min, &
                               chunks(c)%field%x_max,     &
                               chunks(c)%field%y_min,     &
                               chunks(c)%field%y_max,     &
@@ -81,6 +83,7 @@ SUBROUTINE reset_field()
     ENDIF
 
   ENDDO
+  IF(profiler_on) profiler%reset=profiler%reset+(timer()-kernel_time)
 
 END SUBROUTINE reset_field
 

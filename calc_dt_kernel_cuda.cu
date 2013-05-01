@@ -24,6 +24,8 @@
  *  factor is used to ensure numerical stability.
  */
 
+#include "mpi.h"
+#include <iostream>
 #include "cuda_common.cu"
 #include "ftocmacros.h"
 #include <algorithm>
@@ -69,10 +71,8 @@ const double* __restrict const yvel0,
     double dt_min_val = g_big;
     double jk_control = 0.0;
 
-    typedef double reduce_t;
-
-    __shared__ reduce_t dt_min_shared[BLOCK_SZ];
-    __shared__ reduce_t jk_ctrl_shared[BLOCK_SZ];
+    __shared__ double dt_min_shared[BLOCK_SZ];
+    __shared__ double jk_ctrl_shared[BLOCK_SZ];
     dt_min_shared[threadIdx.x] = dt_min_val;
     jk_ctrl_shared[threadIdx.x] = jk_control;
 
@@ -152,7 +152,7 @@ double* soundspeed,
 double* xvel0,
 double* yvel0,
 //output
-double* dt_min,
+double* unused_array,
 double* dt_min_val,
 int* dtl_control,
 double* xl_pos,

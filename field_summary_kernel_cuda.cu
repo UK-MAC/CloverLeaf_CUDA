@@ -23,6 +23,8 @@
  *  pressure for the chunk is calculated.
  */
 
+#include "mpi.h"
+#include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
 
@@ -30,7 +32,7 @@
 extern CloverleafCudaChunk chunk;
 
 __global__ void device_field_summary_kernel_cuda
-(int x_min,int x_max,int y_min,int y_max,
+(int x_min, int x_max, int y_min, int y_max,
 const double* __restrict const volume,
 const double* __restrict const density0,
 const double* __restrict const energy0,
@@ -55,7 +57,6 @@ const double* __restrict const yvel0,
     ie_shared[threadIdx.x] = 0.0;
     ke_shared[threadIdx.x] = 0.0;
     press_shared[threadIdx.x] = 0.0;
-    __syncthreads();
 
     if (row >= (y_min + 1) && row <= (y_max + 1)
     && column >= (x_min + 1) && column <= (x_max + 1))
@@ -110,7 +111,7 @@ const double* __restrict const yvel0,
 }
 
 extern "C" void field_summary_kernel_cuda_
-(int *x_min,int *x_max,int *y_min,int *y_max,
+(int *x_min, int *x_max, int *y_min, int *y_max,
 const double* volume,
 const double* density0,
 const double* energy0,

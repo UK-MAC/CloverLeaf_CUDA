@@ -60,7 +60,9 @@ CODE_GEN_FERMI=-gencode arch=compute_20,code=sm_21
 CODE_GEN_KEPLER=-gencode arch=compute_30,code=sm_30
 
 # requires CUDA_HOME to be set - not the same on all machines
-NV_FLAGS=-O2 -I$(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -DNO_ERR_CHK
+NV_FLAGS=-O2 -I$(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -Xcompiler "-mtune=native -march=native"
+#NV_FLAGS+=-DNO_ERR_CHK
+#NV_FLAGS+=-DTIME_KERNELS
 
 ifdef DEBUG
   FLAGS_INTEL     = -O0 -g -debug all -check all -traceback -check noarg_temp_created
@@ -101,6 +103,7 @@ all: clover_leaf
 
 clover_leaf: cuda_clover c_lover *.f90
 	$(MPI_COMPILER) $(FLAGS)	\
+	pack_kernel.f90 \
 	data.f90			\
 	definitions.f90			\
 	cufor_mpi_interop.f90	\
@@ -148,12 +151,18 @@ clover_leaf: cuda_clover c_lover *.f90
 	accelerate_kernel_c.o           \
 	revert_kernel_c.o               \
 	reset_field_kernel_c.o          \
+	pack_kernel_c.o            \
 	advec_mom_kernel_c.o            \
 	PdV_kernel_c.o                  \
 	flux_calc_kernel_c.o            \
 	ideal_gas_kernel_c.o            \
 	advec_cell_kernel_c.o           \
 	viscosity_kernel_c.o            \
+	initialise_chunk_kernel_c.o		\
+	update_halo_kernel_c.o		\
+	generate_chunk_kernel_c.o		\
+	calc_dt_kernel_c.o		\
+	field_summary_kernel_c.o		\
 	timer_c.o                       \
 	$(CUDA_FILES)	\
 	-L $(CUDA_HOME)/lib64 -lcudart $(CPPLIBS) 	\
@@ -164,11 +173,17 @@ c_lover:
 	accelerate_kernel_c.c           \
 	PdV_kernel_c.c                  \
 	flux_calc_kernel_c.c            \
+	pack_kernel_c.c            \
 	revert_kernel_c.c               \
 	reset_field_kernel_c.c          \
 	ideal_gas_kernel_c.c            \
 	viscosity_kernel_c.c            \
 	advec_mom_kernel_c.c		\
+	initialise_chunk_kernel_c.c		\
+	update_halo_kernel_c.c		\
+	generate_chunk_kernel_c.c		\
+	calc_dt_kernel_c.c		\
+	field_summary_kernel_c.c		\
 	advec_cell_kernel_c.c		\
 	timer_c.c            
 

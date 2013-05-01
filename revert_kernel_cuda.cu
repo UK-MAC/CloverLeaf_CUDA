@@ -26,6 +26,8 @@
  */
 
 
+#include "mpi.h"
+#include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
 

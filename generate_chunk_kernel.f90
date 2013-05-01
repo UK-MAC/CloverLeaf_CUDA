@@ -48,7 +48,8 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
                                  state_radius,            &
                                  state_geometry,          &
                                  g_rect,                  &
-                                 g_circ                   )
+                                 g_circ,                  &
+                                 g_point)
 
   IMPLICIT NONE
 
@@ -73,6 +74,7 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
   INTEGER     , DIMENSION(number_of_states) :: state_geometry
   INTEGER      :: g_rect
   INTEGER      :: g_circ
+  INTEGER      :: g_point
 
   REAL(KIND=8) :: radius,x_cent,y_cent
   INTEGER      :: state
@@ -81,7 +83,7 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
 
   ! State 1 is always the background state
 
-!$OMP PARALLEL
+!$OMP PARALLEL SHARED(x_cent,y_cent)
 !$OMP DO
   DO k=y_min-2,y_max+2
     DO j=x_min-2,x_max+2
@@ -117,12 +119,12 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
     x_cent=state_xmin(state)
     y_cent=state_ymin(state)
 
-!$OMP DO PRIVATE(radius)
+!$OMP DO PRIVATE(radius,jt,kt)
     DO k=y_min-2,y_max+2
       DO j=x_min-2,x_max+2
         IF(state_geometry(state).EQ.g_rect ) THEN
-          IF(vertexx(j).GE.state_xmin(state).AND.vertexx(j).LT.state_xmax(state)) THEN
-            IF(vertexy(k).GE.state_ymin(state).AND.vertexy(k).LT.state_ymax(state)) THEN
+          IF(vertexx(j+1).GE.state_xmin(state).AND.vertexx(j).LT.state_xmax(state)) THEN
+            IF(vertexy(k+1).GE.state_ymin(state).AND.vertexy(k).LT.state_ymax(state)) THEN
               energy0(j,k)=state_energy(state)
               density0(j,k)=state_density(state)
               DO kt=k,k+1
@@ -136,6 +138,17 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
         ELSEIF(state_geometry(state).EQ.g_circ ) THEN
           radius=SQRT((cellx(j)-x_cent)*(cellx(j)-x_cent)+(celly(k)-y_cent)*(celly(k)-y_cent))
           IF(radius.LE.state_radius(state))THEN
+            energy0(j,k)=state_energy(state)
+            density0(j,k)=state_density(state)
+            DO kt=k,k+1
+              DO jt=j,j+1
+                xvel0(jt,kt)=state_xvel(state)
+                yvel0(jt,kt)=state_yvel(state)
+              ENDDO
+            ENDDO
+          ENDIF
+        ELSEIF(state_geometry(state).EQ.g_point) THEN
+          IF(vertexx(j).EQ.x_cent .AND. vertexy(k).EQ.y_cent) THEN
             energy0(j,k)=state_energy(state)
             density0(j,k)=state_density(state)
             DO kt=k,k+1

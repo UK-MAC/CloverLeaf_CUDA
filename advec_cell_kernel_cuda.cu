@@ -22,6 +22,7 @@
  *  @details CUDA cell advection kernel driver.
  */
 
+#include "mpi.h"
 #include <iostream>
 #include "ftocmacros.h"
 #include "advec_cell_cuda_kernels.cu"
@@ -32,7 +33,7 @@
 extern CloverleafCudaChunk chunk;
 
 extern "C" void advec_cell_kernel_cuda_
-(const int* xmin, const int* xmax, const int* ymin, const int* ymax,
+(int* xmin, int* xmax, int* ymin, int* ymax,
 const int* dr,
 const int* swp_nmbr,
 const bool* vector,

@@ -22,8 +22,8 @@
  *  @details Invoked the users specified chunk generator.
  */
 
-#include <cstdio>
-#include <numeric>
+#include "mpi.h"
+#include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
 
@@ -33,8 +33,31 @@
 
 extern CloverleafCudaChunk chunk;
 
+__global__ void device_generate_chunk_kernel_init_cuda
+(int x_min, int x_max, int y_min, int y_max,
+      double* density0,
+      double* energy0,
+      double* xvel0,
+      double* yvel0,
+const double* state_density,
+const double* state_energy,
+const double* state_xvel,
+const double* state_yvel)
+{
+    __kernel_indexes;
+
+    if (row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
+    {
+        energy0[THARR2D(0, 0, 0)] = state_energy[0];
+        density0[THARR2D(0, 0, 0)] = state_density[0];
+        xvel0[THARR2D(0, 0, 1)] = state_xvel[0];
+        yvel0[THARR2D(0, 0, 1)] = state_yvel[0];
+    }
+}
+
 __global__ void device_generate_chunk_kernel_cuda
-(int x_min,int x_max,int y_min,int y_max,
+(int x_min, int x_max, int y_min, int y_max,
 const double* __restrict const vertexx,
 const double* __restrict const vertexy,
 const double* __restrict const cellx,
@@ -55,6 +78,7 @@ const double* __restrict const state_radius,
 const int* __restrict const state_geometry,
 const int g_rect,
 const int g_circ,
+const int g_point,
 const int state)
 {
     __kernel_indexes;
@@ -64,9 +88,9 @@ const int state)
     {
         if (state_geometry[state] == g_rect)
         {
-            if (vertexx[column] >= state_xmin[state]
+            if (vertexx[column+1] >= state_xmin[state]
             && vertexx[column] <  state_xmax[state]
-            && vertexy[row]    >= state_ymin[state]
+            && vertexy[row+1]    >= state_ymin[state]
             && vertexy[row]    <  state_ymax[state])
             {
                 energy0[THARR2D(0, 0, 0)] = state_energy[state];
@@ -108,34 +132,33 @@ const int state)
                 yvel0[THARR2D(1, 1, 1)] = state_yvel[state];
             }
         }
-    }
-}
+        else if (state_geometry[state] == g_point)
+        {
+            if (vertexx[column] == state_xmin[state]
+            && vertexy[row] == state_ymin[state])
+            {
+                energy0[THARR2D(0, 0, 0)] = state_energy[state];
+                density0[THARR2D(0, 0, 0)] = state_density[state];
 
-__global__ void device_generate_chunk_kernel_init_cuda
-(int x_min,int x_max,int y_min,int y_max,
-      double* density0,
-      double* energy0,
-      double* xvel0,
-      double* yvel0,
-const double* state_density,
-const double* state_energy,
-const double* state_xvel,
-const double* state_yvel)
-{
-    __kernel_indexes;
+                //unrolled do loop
+                xvel0[THARR2D(0, 0, 1)] = state_xvel[state];
+                yvel0[THARR2D(0, 0, 1)] = state_yvel[state];
 
-    if (row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
-    && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
-    {
-        energy0[THARR2D(0, 0, 0)] = state_energy[0];
-        density0[THARR2D(0, 0, 0)] = state_density[0];
-        xvel0[THARR2D(0, 0, 1)] = state_xvel[0];
-        yvel0[THARR2D(0, 0, 1)] = state_yvel[0];
+                xvel0[THARR2D(1, 0, 1)] = state_xvel[state];
+                yvel0[THARR2D(1, 0, 1)] = state_yvel[state];
+
+                xvel0[THARR2D(0, 1, 1)] = state_xvel[state];
+                yvel0[THARR2D(0, 1, 1)] = state_yvel[state];
+
+                xvel0[THARR2D(1, 1, 1)] = state_xvel[state];
+                yvel0[THARR2D(1, 1, 1)] = state_yvel[state];
+            }
+        }
     }
 }
 
 extern "C" void generate_chunk_kernel_cuda_
-(int *x_min,int *x_max,int *y_min,int *y_max,
+(int *x_min, int *x_max, int *y_min, int *y_max,
 const double* vertexx,
 const double* vertexy,
 const double* cellx,
@@ -156,24 +179,31 @@ const double* state_ymax,
 const double* state_radius,
 const int* state_geometry,
 const int* g_rect,
-const int* g_circ)
+const int* g_circ,
+const int* g_point)
 {
     chunk.generate_chunk_kernel(
-        * number_of_states, state_density, state_energy, state_xvel,
+        *number_of_states, state_density, state_energy, state_xvel,
         state_yvel, state_xmin, state_xmax, state_ymin, state_ymax,
-        state_radius, state_geometry, * g_rect, * g_circ);
+        state_radius, state_geometry, *g_rect, *g_circ, *g_point);
 }
 
 void CloverleafCudaChunk::generate_chunk_kernel
 (const int number_of_states, 
-const double* state_density, const double* state_energy,
-const double* state_xvel, const double* state_yvel,
-const double* state_xmin, const double* state_xmax,
-const double* state_ymin, const double* state_ymax,
-const double* state_radius, const int* state_geometry,
-const int g_rect, const int g_circ)
+const double* state_density,
+const double* state_energy,
+const double* state_xvel,
+const double* state_yvel,
+const double* state_xmin,
+const double* state_xmax,
+const double* state_ymin,
+const double* state_ymax,
+const double* state_radius,
+const int* state_geometry,
+const int g_rect,
+const int g_circ,
+const int g_point)
 {
-
     // only copied and used one time, don't care about speed.
     #define THRUST_ALLOC_ARRAY(arr, type) \
         thrust::device_ptr<type> thr_state_ ## arr ## _d  \
@@ -183,6 +213,8 @@ const int g_rect, const int g_circ)
                      thr_state_ ## arr ## _d);\
         const type* state_ ## arr ## _d  \
             = thrust::raw_pointer_cast(thr_state_ ## arr ## _d);
+
+    CUDA_BEGIN_PROFILE;
 
     THRUST_ALLOC_ARRAY(density, double);
     THRUST_ALLOC_ARRAY(energy, double);
@@ -197,11 +229,8 @@ const int g_rect, const int g_circ)
 
     #undef THRUST_ALLOC_ARRAY
 
-    CUDA_BEGIN_PROFILE;
-
     device_generate_chunk_kernel_init_cuda<<< num_blocks, BLOCK_SZ >>>
-    (x_min, x_max, y_min, y_max, 
-        density0, energy0, xvel0, yvel0, 
+    (x_min, x_max, y_min, y_max, density0, energy0, xvel0, yvel0, 
         state_density_d, state_energy_d, state_xvel_d, state_yvel_d);
     CUDA_ERR_CHECK;
 
@@ -212,11 +241,9 @@ const int g_rect, const int g_circ)
             vertexx, vertexy, cellx, celly, density0, energy0, xvel0, yvel0, 
             state_density_d, state_energy_d, state_xvel_d,
             state_yvel_d, state_xmin_d, state_xmax_d, state_ymin_d, state_ymax_d,
-            state_radius_d, state_geometry_d,  g_rect,  g_circ, state);
+            state_radius_d, state_geometry_d, g_rect, g_circ, g_point, state);
         CUDA_ERR_CHECK;
     }
-
-    CUDA_END_PROFILE;
 
     thrust::device_free(thr_state_density_d);
     thrust::device_free(thr_state_energy_d);
@@ -228,5 +255,7 @@ const int g_rect, const int g_circ)
     thrust::device_free(thr_state_ymax_d);
     thrust::device_free(thr_state_radius_d);
     thrust::device_free(thr_state_geometry_d);
+
+    CUDA_END_PROFILE;
 }
 

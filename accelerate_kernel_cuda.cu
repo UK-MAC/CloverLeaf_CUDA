@@ -23,6 +23,7 @@
  *  velocity field.
  */
 
+#include "mpi.h"
 #include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
@@ -31,7 +32,7 @@
 extern CloverleafCudaChunk chunk;
 
 __global__ void device_accelerate_kernel_cuda
-(int x_min,int x_max,int y_min,int y_max, double dbyt,
+(int x_min, int x_max, int y_min, int y_max, double dbyt,
 const double* __restrict const xarea,
 const double* __restrict const yarea,
 const double* __restrict const volume,

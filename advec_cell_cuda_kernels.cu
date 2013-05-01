@@ -342,3 +342,4 @@ const double* __restrict const mass_flux_y)
         energy1[THARR2D(0, 0, 0)] = post_ener;
     }
 }
+

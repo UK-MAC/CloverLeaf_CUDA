@@ -157,7 +157,7 @@ public:
         const double* state_xmin, const double* state_xmax,
         const double* state_ymin, const double* state_ymax,
         const double* state_radius, const int* state_geometry,
-        const int g_rect, const int g_circ);
+        const int g_rect, const int g_circ, const int g_point);
 
     void initialise_chunk_kernel(double d_xmin, double d_ymin,
         double d_dx, double d_dy);
@@ -180,9 +180,6 @@ public:
     void viscosity_kernel();
 
     // mpi functions
-    void copyToHost(const int array, double* copy_from);
-    void copyToDevice(const int array, double* copy_into);
-
     void packBuffer (const int which_array, const int which_side,
         double* buffer, const int buffer_size, const int depth);
     void unpackBuffer (const int which_array, const int which_side,

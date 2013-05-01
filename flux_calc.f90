@@ -32,25 +32,13 @@ SUBROUTINE flux_calc()
 
   INTEGER :: c
 
+  REAL(KIND=8) :: kernel_time,timer
+
+  IF(profiler_on) kernel_time=timer()
   DO c=1,number_of_chunks
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
 
-      IF(use_CUDA_kernels)THEN
-        CALL flux_calc_kernel_cuda(chunks(c)%field%x_min,         &
-                            chunks(c)%field%x_max,           &
-                            chunks(c)%field%y_min,           &
-                            chunks(c)%field%y_max,           &
-                            dt,                              &
-                            chunks(c)%field%xarea,           &
-                            chunks(c)%field%yarea,           &
-                            chunks(c)%field%xvel0,           &
-                            chunks(c)%field%yvel0,           &
-                            chunks(c)%field%xvel1,           &
-                            chunks(c)%field%yvel1,           &
-                            chunks(c)%field%vol_flux_x,      &
-                            chunks(c)%field%vol_flux_y       )
-      ELSE  &
       IF(use_fortran_kernels)THEN
         CALL flux_calc_kernel(chunks(c)%field%x_min,         &
                             chunks(c)%field%x_max,           &
@@ -65,6 +53,20 @@ SUBROUTINE flux_calc()
                             chunks(c)%field%yvel1,           &
                             chunks(c)%field%vol_flux_x,      &
                             chunks(c)%field%vol_flux_y       )
+      ELSEIF(use_cuda_kernels)THEN
+        CALL flux_calc_kernel_cuda(chunks(c)%field%x_min,           &
+                                   chunks(c)%field%x_max,           &
+                                   chunks(c)%field%y_min,           &
+                                   chunks(c)%field%y_max,           &
+                                   dt,                              &
+                                   chunks(c)%field%xarea,           &
+                                   chunks(c)%field%yarea,           &
+                                   chunks(c)%field%xvel0,           &
+                                   chunks(c)%field%yvel0,           &
+                                   chunks(c)%field%xvel1,           &
+                                   chunks(c)%field%yvel1,           &
+                                   chunks(c)%field%vol_flux_x,      &
+                                   chunks(c)%field%vol_flux_y       )
       ELSEIF(use_C_kernels)THEN
         CALL flux_calc_kernel_c(chunks(c)%field%x_min,       &
                             chunks(c)%field%x_max,           &
@@ -84,6 +86,7 @@ SUBROUTINE flux_calc()
     ENDIF
 
   ENDDO
+  IF(profiler_on) profiler%flux=profiler%flux+(timer()-kernel_time)
 
 END SUBROUTINE flux_calc
 

@@ -32,12 +32,15 @@ SUBROUTINE accelerate()
 
   INTEGER :: c
 
+  REAL(KIND=8) :: kernel_time,timer
+
+  IF(profiler_on) kernel_time=timer()
   DO c=1,number_of_chunks
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
 
-      IF(use_CUDA_kernels) THEN
-        CALL accelerate_kernel_cuda(chunks(c)%field%x_min,              &
+      IF(use_fortran_kernels) THEN
+        CALL accelerate_kernel(chunks(c)%field%x_min,                &
                              chunks(c)%field%x_max,                  &
                              chunks(c)%field%y_min,                  &
                              chunks(c)%field%y_max,                  &
@@ -53,9 +56,8 @@ SUBROUTINE accelerate()
                              chunks(c)%field%xvel1,                  &
                              chunks(c)%field%yvel1,                  &
                              chunks(c)%field%work_array1             )
-      ELSE  &
-      IF(use_fortran_kernels) THEN
-        CALL accelerate_kernel(chunks(c)%field%x_min,                &
+      ELSEIF(use_cuda_kernels)THEN
+        CALL accelerate_kernel_cuda(chunks(c)%field%x_min,                &
                              chunks(c)%field%x_max,                  &
                              chunks(c)%field%y_min,                  &
                              chunks(c)%field%y_max,                  &
@@ -93,6 +95,7 @@ SUBROUTINE accelerate()
     ENDIF
 
   ENDDO
+  IF(profiler_on) profiler%acceleration=profiler%acceleration+(timer()-kernel_time)
 
 END SUBROUTINE accelerate
 

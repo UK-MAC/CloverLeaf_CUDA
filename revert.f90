@@ -36,8 +36,8 @@ SUBROUTINE revert()
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
 
-      IF(use_cuda_kernels)THEN
-        CALL revert_kernel_cuda(chunks(c)%field%x_min,   &
+      IF(use_fortran_kernels)THEN
+        CALL revert_kernel(chunks(c)%field%x_min,   &
                          chunks(c)%field%x_max,     &
                          chunks(c)%field%y_min,     &
                          chunks(c)%field%y_max,     &
@@ -45,9 +45,8 @@ SUBROUTINE revert()
                          chunks(c)%field%density1,  &
                          chunks(c)%field%energy0,   &
                          chunks(c)%field%energy1    )
-      ELSE &
-      IF(use_fortran_kernels)THEN
-        CALL revert_kernel(chunks(c)%field%x_min,   &
+      ELSEIF(use_cuda_kernels)THEN
+        CALL revert_kernel_cuda(chunks(c)%field%x_min, &
                          chunks(c)%field%x_max,     &
                          chunks(c)%field%y_min,     &
                          chunks(c)%field%y_max,     &

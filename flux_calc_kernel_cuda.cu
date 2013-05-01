@@ -22,9 +22,10 @@
  *  @details The edge volume fluxes are calculated based on the velocity fields.
  */
 
+#include "mpi.h"
+#include <iostream>
 #include "cuda_common.cu"
 #include "ftocmacros.h"
-#include <iostream>
 
 #include "chunk_cuda.cu"
 extern CloverleafCudaChunk chunk;

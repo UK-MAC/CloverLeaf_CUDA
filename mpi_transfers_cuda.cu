@@ -22,10 +22,11 @@
  *  @details Transfers the buffers required for the mpi halo exchange
  */
 
+#include "mpi.h"
 #include <iostream>
-
 #include "chunk_cuda.cu"
 #include "cuda_common.cu"
+
 #include <numeric>
 
 #include "pack_buffer_kernels.cu"

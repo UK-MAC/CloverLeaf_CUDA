@@ -23,7 +23,7 @@ MODULE data_module
 
    IMPLICIT NONE
 
-   REAL(KIND=8), PARAMETER :: g_version=0.9
+   REAL(KIND=8), PARAMETER :: g_version=1.0
 
    INTEGER,      PARAMETER :: g_ibig=640000
 
@@ -61,7 +61,7 @@ MODULE data_module
    INTEGER,         PARAMETER :: CELL_DATA     = 1,        &
                                  VERTEX_DATA   = 2,        &
                                  X_FACE_DATA   = 3,        &
-                                 y_FACE_DATA   = 4
+                                 Y_FACE_DATA   = 4
 
 
    ! Time step control constants
@@ -71,7 +71,9 @@ MODULE data_module
                                 ,DIVERG= 4
 
    INTEGER,                      PARAMETER :: g_rect=1 &
-                                ,g_circ=2
+                                ,g_circ=2 &
+                                ,g_point=3
+
 
    INTEGER         ::            g_in           & ! File for input data.
                                 ,g_out
