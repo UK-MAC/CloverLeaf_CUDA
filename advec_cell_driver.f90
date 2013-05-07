@@ -59,29 +59,8 @@ SUBROUTINE advec_cell_driver(chunk,sweep_number,dir)
                            chunks(chunk)%field%work_array6,           &
                            chunks(chunk)%field%work_array7            )
     ELSEIF(use_cuda_kernels)THEN
-      CALL advec_cell_kernel_cuda(chunks(chunk)%field%x_min,                 &
-                                  chunks(chunk)%field%x_max,                 &
-                                  chunks(chunk)%field%y_min,                 &
-                                  chunks(chunk)%field%y_max,                 &
-                                  dir,                                       &
-                                  sweep_number,                              &
-                                  use_vector_loops,                          &
-                                  chunks(chunk)%field%vertexdx,              &
-                                  chunks(chunk)%field%vertexdy,              &
-                                  chunks(chunk)%field%volume,                &
-                                  chunks(chunk)%field%density1,              &
-                                  chunks(chunk)%field%energy1,               &
-                                  chunks(chunk)%field%mass_flux_x,           &
-                                  chunks(chunk)%field%vol_flux_x,            &
-                                  chunks(chunk)%field%mass_flux_y,           &
-                                  chunks(chunk)%field%vol_flux_y,            &
-                                  chunks(chunk)%field%work_array1,           &
-                                  chunks(chunk)%field%work_array2,           &
-                                  chunks(chunk)%field%work_array3,           &
-                                  chunks(chunk)%field%work_array4,           &
-                                  chunks(chunk)%field%work_array5,           &
-                                  chunks(chunk)%field%work_array6,           &
-                                  chunks(chunk)%field%work_array7            )
+      CALL advec_cell_kernel_cuda(dir,                                 &
+                                  sweep_number)
     ELSEIF(use_C_kernels)THEN
       IF(use_vector_loops) THEN
         vector=1

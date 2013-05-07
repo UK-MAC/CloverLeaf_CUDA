@@ -28,18 +28,7 @@
     int* in_x_max, \
     int* in_y_min, \
     int* in_y_max, \
- \
-    int* in_left, \
-    int* in_right, \
-    int* in_top, \
-    int* in_bottom, \
-    int* in_left_boundary, \
-    int* in_right_boundary, \
-    int* in_top_boundary, \
-    int* in_bottom_boundary, \
- \
-    /* mpi task */\
-    int* in_task \
+    bool* in_profiler_on
 
 #include "cuda_common.cu"
 
@@ -127,17 +116,8 @@ private:
     int y_min;
     int y_max;
 
-    int left;
-    int right;
-    int top;
-    int bottom;
-    int left_boundary;
-    int right_boundary;
-    int top_boundary;
-    int bottom_boundary;
-
-    // mpi task
-    int task;
+    // if being profiled
+    bool profiler_on;
 public:
     void calc_dt_kernel(double g_small, double g_big, double dtmin,
         double dtc_safe, double dtu_safe, double dtv_safe,

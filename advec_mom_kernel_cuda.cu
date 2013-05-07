@@ -22,7 +22,6 @@
  *  @details CUDA momentum advection driver.
  */
 
-#include "mpi.h"
 #include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
@@ -32,28 +31,9 @@
 extern CloverleafCudaChunk chunk;
 
 extern "C" void advec_mom_kernel_cuda_
-(int *xmin,int *xmax,int *ymin,int *ymax,
-      double *xvel1,
-      double *yvel1,
-const double *mass_flux_x,
-const double *vol_flux_x,
-const double *mass_flux_y,
-const double *vol_flux_y,
-const double *volume,
-const double *density1,
-      double* unused_array1,
-      double* unused_array2,
-      double* unused_array3,
-      double* unused_array4,
-      double* unused_array5,
-      double* unused_array6,
-      double* unused_array7,
-const double *celldx,
-const double *celldy,
-int *whch_vl,
+(int *whch_vl,
 int *swp_nmbr,
-int *drctn,
-bool *vector)
+int *drctn)
 {
     chunk.advec_mom_kernel(*whch_vl, *swp_nmbr, *drctn);
 }

@@ -33,21 +33,11 @@ CloverleafCudaChunk chunk;
 extern "C" void initialise_cuda_
 (INITIALISE_ARGS)
 {
-    chunk = CloverleafCudaChunk(
-        in_x_min,
-        in_x_max,
-        in_y_min,
-        in_y_max,
-
-        in_left,
-        in_right,
-        in_top,
-        in_bottom,
-        in_left_boundary,
-        in_right_boundary,
-        in_top_boundary,
-        in_bottom_boundary,
-        in_task);
+    chunk = CloverleafCudaChunk(in_x_min,
+                                in_x_max,
+                                in_y_min,
+                                in_y_max,
+                                in_profiler_on);
 }
 
 CloverleafCudaChunk::CloverleafCudaChunk
@@ -62,16 +52,8 @@ CloverleafCudaChunk::CloverleafCudaChunk
 x_max(*in_x_max),
 y_min(*in_y_min),
 y_max(*in_y_max),
-left(*in_left),
-right(*in_right),
-top(*in_top),
-bottom(*in_bottom),
-left_boundary(*in_left_boundary),
-right_boundary(*in_right_boundary),
-top_boundary(*in_top_boundary),
-bottom_boundary(*in_bottom_boundary),
-task(*in_task),
-num_blocks((((*in_x_max)+6)*((*in_y_max)+6))/BLOCK_SZ)
+profiler_on(*in_profiler_on),
+num_blocks((((*in_x_max)+4)*((*in_y_max)+4))/BLOCK_SZ)
 {
     #define CUDA_ARRAY_ALLOC(arr, size)     \
         cudaMalloc((void**) &arr, size);    \

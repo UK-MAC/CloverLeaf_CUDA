@@ -57,11 +57,11 @@ CFLAGS_          = -O2
 # flags for nvcc
 # set NV_ARCH to select the correct one
 CODE_GEN_FERMI=-gencode arch=compute_20,code=sm_21
-CODE_GEN_KEPLER=-gencode arch=compute_30,code=sm_30
+CODE_GEN_KEPLER=-gencode arch=compute_35,code=sm_35
 
 # requires CUDA_HOME to be set - not the same on all machines
-NV_FLAGS=-O2 -I$(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -Xcompiler "-mtune=native -march=native"
-#NV_FLAGS+=-DNO_ERR_CHK
+NV_FLAGS=-O2 -I$(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -restrict
+NV_FLAGS+=-DNO_ERR_CHK
 #NV_FLAGS+=-DTIME_KERNELS
 
 ifdef DEBUG

@@ -40,15 +40,7 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
                              chunks(chunk)%field%x_max,  &
                              chunks(chunk)%field%y_min,  &
                              chunks(chunk)%field%y_max,  &
-                             chunks(chunk)%field%left,   &
-                             chunks(chunk)%field%right,  &
-                             chunks(chunk)%field%top,    &
-                             chunks(chunk)%field%bottom, &
-                             chunks(chunk)%field%left_boundary,  &
-                             chunks(chunk)%field%right_boundary, &
-                             chunks(chunk)%field%top_boundary,   &
-                             chunks(chunk)%field%bottom_boundary, &
-                             parallel%task)
+                             profiler_on);
 
     ELSE 
 

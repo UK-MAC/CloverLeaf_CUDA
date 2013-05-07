@@ -24,7 +24,6 @@
  */
 
 
-#include "mpi.h"
 #include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
@@ -61,15 +60,7 @@ const double* __restrict const yvel1)
 }
 
 extern "C" void reset_field_kernel_cuda_
-(int *x_min, int *x_max, int *y_min, int *y_max,
-      double* density0,
-const double* density1,
-      double* energy0,
-const double* energy1,
-      double* xvel0,
-const double* xvel1,
-      double* yvel0,
-const double* yvel1)
+(void)
 {
     chunk.reset_field_kernel();
 }

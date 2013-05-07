@@ -24,7 +24,6 @@
  *  Only cells in compression will have a non-zero value.
  */
 
-#include "mpi.h"
 #include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
@@ -98,14 +97,7 @@ const double * __restrict const yvel0)
 }
 
 extern "C" void viscosity_kernel_cuda_
-(int *xmin, int *x_max, int *ymin, int *y_max,
-const double *celldx,
-const double *celldy,
-const double *density0,
-const double *pressure,
-      double *viscosity,
-const double *xvel0,
-const double *yvel0)
+(void)
 {
     chunk.viscosity_kernel();
 }

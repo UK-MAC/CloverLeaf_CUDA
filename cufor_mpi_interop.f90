@@ -55,16 +55,7 @@ CONTAINS
       y_inc=1
     ENDIF
 
-    !left_buf_sz = (1+(chunks(chunk)%field%y_max+y_inc+depth)    &
-        !-(chunks(chunk)%field%y_min-depth))*depth
-    !right_buf_sz = (1+(chunks(chunk)%field%y_max+y_inc+depth)   &
-        !-(chunks(chunk)%field%y_min-depth))*depth
-    !bottom_buf_sz = (1+(chunks(chunk)%field%x_max+x_inc+depth)  &
-        !-(chunks(chunk)%field%x_min-depth))*depth
-    !top_buf_sz = (1+(chunks(chunk)%field%x_max+x_inc+depth) &
-        !-(chunks(chunk)%field%x_min-depth))*depth
-
-    ! set to col/row size (?)
+    ! set to col/row size
     left_buf_sz = (chunks(chunk)%field%y_max+5)*depth
     right_buf_sz = (chunks(chunk)%field%y_max+5)*depth
 

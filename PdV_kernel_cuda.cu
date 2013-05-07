@@ -25,8 +25,6 @@
  *  predictor or corrector.
  */
 
-
-#include "mpi.h"
 #include <iostream>
 #include "cuda_common.cu"
 #include "ftocmacros.h"
@@ -196,22 +194,7 @@ const double * __restrict const yvel1)
 }
 
 extern "C" void pdv_kernel_cuda_
-(int *error_condition, int *prdct,
-int *xmin, int *xmax, int *ymin, int *ymax, double *dtbyt,
-double *xarea,
-double *yarea,
-double *volume,
-double *density0,
-double *density1,
-double *energy0,
-double *energy1,
-double *pressure,
-double *viscosity,
-double *xvel0,
-double *xvel1,
-double *yvel0,
-double *yvel1,
-double *unused_array)
+(int *error_condition, int *prdct, double *dtbyt)
 {
     chunk.PdV_kernel(error_condition, *prdct, *dtbyt);
 }
@@ -241,7 +224,7 @@ void CloverleafCudaChunk::PdV_kernel
     }
 
     *error_condition = *thrust::max_element(reduce_pdv,
-        reduce_pdv + num_blocks);
+                                            reduce_pdv + num_blocks);
 
     CUDA_END_PROFILE;
 

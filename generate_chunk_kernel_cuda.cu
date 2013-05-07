@@ -22,7 +22,6 @@
  *  @details Invoked the users specified chunk generator.
  */
 
-#include "mpi.h"
 #include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
@@ -158,16 +157,7 @@ const int state)
 }
 
 extern "C" void generate_chunk_kernel_cuda_
-(int *x_min, int *x_max, int *y_min, int *y_max,
-const double* vertexx,
-const double* vertexy,
-const double* cellx,
-const double* celly,
-      double* density0,
-      double* energy0,
-      double* xvel0,
-      double* yvel0,
-const int* number_of_states,
+(const int* number_of_states,
 const double* state_density,
 const double* state_energy,
 const double* state_xvel,

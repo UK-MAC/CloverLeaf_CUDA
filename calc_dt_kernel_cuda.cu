@@ -24,7 +24,6 @@
  *  factor is used to ensure numerical stability.
  */
 
-#include "mpi.h"
 #include <iostream>
 #include "cuda_common.cu"
 #include "ftocmacros.h"
@@ -129,30 +128,13 @@ const double* __restrict const yvel0,
 }
 
 extern "C" void calc_dt_kernel_cuda_
-(int* xmin, int* xmax, int* ymin, int* ymax,
-double* g_small,
+(double* g_small,
 double* g_big,
 double* dtmin,
 double* dtc_safe,
 double* dtu_safe,
 double* dtv_safe,
 double* dtdiv_safe,
-double* xarea,
-double* yarea,
-double* cellx,
-double* celly,
-double* celldx,
-double* celldy,
-double* volume,
-double* density0,
-double* energy0,
-double* pressure,
-double* viscosity,
-double* soundspeed,
-double* xvel0,
-double* yvel0,
-//output
-double* unused_array,
 double* dt_min_val,
 int* dtl_control,
 double* xl_pos,
@@ -187,10 +169,12 @@ int* small)
     CUDA_ERR_CHECK;
 
     // reduce_ptr 2 is a thrust wrapper around work_array_2
-    *dt_min_val = *thrust::min_element(reduce_ptr_2, reduce_ptr_2 + num_blocks);
+    *dt_min_val = *thrust::min_element(reduce_ptr_2,
+                                       reduce_ptr_2 + num_blocks);
 
     // ditto on reduce ptr 1
-    double jk_control = *thrust::max_element(reduce_ptr_1, reduce_ptr_1 + num_blocks);
+    double jk_control = *thrust::max_element(reduce_ptr_1,
+                                             reduce_ptr_1 + num_blocks);
 
     CUDA_END_PROFILE;
 

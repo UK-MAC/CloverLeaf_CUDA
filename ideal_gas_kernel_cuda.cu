@@ -24,7 +24,6 @@
  */
 
 
-#include "mpi.h"
 #include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
@@ -61,21 +60,13 @@ const double * __restrict const energy,
 }
 
 extern "C" void ideal_gas_kernel_cuda_predict_
-(int *x_min, int *x_max, int *y_min, int *y_max,
-const double *density,
-const double *energy,
-      double *pressure,
-      double *soundspeed)
+(void)
 {
     chunk.ideal_gas_kernel(1);
 }
 
 extern "C" void ideal_gas_kernel_cuda_nopredict_
-(int *x_min, int *x_max, int *y_min, int *y_max,
-const double *density,
-const double *energy,
-      double *pressure,
-      double *soundspeed)
+(void)
 {
     chunk.ideal_gas_kernel(0);
 }

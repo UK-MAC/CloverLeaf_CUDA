@@ -23,7 +23,6 @@
  *  pressure for the chunk is calculated.
  */
 
-#include "mpi.h"
 #include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
@@ -87,7 +86,6 @@ const double* __restrict const yvel0,
 
     }
 
-    // because this is done for multiple values, it is quicker than using Reduce<...>
     __syncthreads();
     for (int offset = BLOCK_SZ / 2; offset > 0; offset /= 2)
     {
@@ -111,18 +109,7 @@ const double* __restrict const yvel0,
 }
 
 extern "C" void field_summary_kernel_cuda_
-(int *x_min, int *x_max, int *y_min, int *y_max,
-const double* volume,
-const double* density0,
-const double* energy0,
-const double* pressure,
-const double* xvel0,
-const double* yvel0,
-      double* vol,
-      double* mass,
-      double* ie,
-      double* ke,
-      double* press)
+(double* vol, double* mass, double* ie, double* ke, double* press)
 {
     chunk.field_summary_kernel(vol, mass, ie, ke, press);
 }
@@ -140,19 +127,24 @@ void CloverleafCudaChunk::field_summary_kernel
     CUDA_ERR_CHECK;
 
     *vol = thrust::reduce(reduce_ptr_1,
-        reduce_ptr_1 + num_blocks, 0.0);
+                          reduce_ptr_1 + num_blocks,
+                          0.0);
 
     *mass = thrust::reduce(reduce_ptr_2,
-        reduce_ptr_2 + num_blocks, 0.0);
+                           reduce_ptr_2 + num_blocks,
+                           0.0);
 
     *ie = thrust::reduce(reduce_ptr_3,
-        reduce_ptr_3 + num_blocks, 0.0);
+                         reduce_ptr_3 + num_blocks,
+                         0.0);
 
     *ke = thrust::reduce(reduce_ptr_4,
-        reduce_ptr_4 + num_blocks, 0.0);
+                         reduce_ptr_4 + num_blocks,
+                         0.0);
 
     *press = thrust::reduce(reduce_ptr_5,
-        reduce_ptr_5 + num_blocks, 0.0);
+                            reduce_ptr_5 + num_blocks,
+                            0.0);
 
     CUDA_END_PROFILE;
 }

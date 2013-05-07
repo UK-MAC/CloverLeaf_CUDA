@@ -192,22 +192,25 @@ inline void errorHandler
 // whether to time kernel run times
 #ifdef TIME_KERNELS
 
+// use same timer as fortran/c
+extern "C" void timer_c_(double*);
+
 // beginning of profiling bit
 #define CUDA_BEGIN_PROFILE \
     double __t_0, __t_1;          \
-    __t_0 = MPI_Wtime();
+    timer_c_(&__t_0);
 
 // end of profiling bit
 #define CUDA_END_PROFILE \
     cudaDeviceSynchronize();                        \
-    __t_1 = MPI_Wtime();                       \
+    timer_c_(&__t_1); \
     std::cout << "[PROFILING] " << __t_1 - __t_0  \
     << " to calculate " << __FILE__  << std::endl;
 
 #else
 
 #define CUDA_BEGIN_PROFILE ;
-#define CUDA_END_PROFILE ;
+#define CUDA_END_PROFILE if (profiler_on) cudaDeviceSynchronize();
 
 #endif // TIME_KERNELS
 

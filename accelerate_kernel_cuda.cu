@@ -23,7 +23,6 @@
  *  velocity field.
  */
 
-#include "mpi.h"
 #include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
@@ -86,19 +85,7 @@ const double* __restrict const yvel0,
 }
 
 extern "C" void accelerate_kernel_cuda_
-(int *xmin, int *xmax, int *ymin, int *ymax,
-double *dbyt,
-double *xarea,
-double *yarea,
-double *volume,
-double *density0,
-double *pressure,
-double *viscosity,
-double *xvel0,
-double *yvel0,
-double *xvel1,
-double *yvel1,
-double *unused_array)
+(double *dbyt)
 {
     chunk.accelerate_kernel(*dbyt);
 }

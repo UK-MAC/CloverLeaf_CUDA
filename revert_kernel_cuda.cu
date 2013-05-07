@@ -26,7 +26,6 @@
  */
 
 
-#include "mpi.h"
 #include <iostream>
 #include "ftocmacros.h"
 #include "cuda_common.cu"
@@ -52,11 +51,7 @@ const double* __restrict const energy0,
 }
 
 extern "C" void revert_kernel_cuda_
-(int *x_min, int *x_max, int *y_min, int *y_max,
-const double* density0,
-      double* density1,
-const double* energy0,
-      double* energy1)
+(void)
 {
     chunk.revert_kernel();
 }

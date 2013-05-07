@@ -22,7 +22,6 @@
  *  @details The edge volume fluxes are calculated based on the velocity fields.
  */
 
-#include "mpi.h"
 #include <iostream>
 #include "cuda_common.cu"
 #include "ftocmacros.h"
@@ -63,20 +62,10 @@ const double * __restrict const yvel1,
 }
 
 extern "C" void flux_calc_kernel_cuda_
-(int *xmin, int *xmax, int *ymin, int *ymax,
-      double *dbyt,
-const double *xarea,
-const double *yarea,
-const double *xvel0,
-const double *yvel0,
-const double *xvel1,
-const double *yvel1,
-      double *vol_flux_x,
-      double *vol_flux_y)
+(double *dbyt)
 {
     chunk.flux_calc_kernel(*dbyt);
 }
-
 
 void CloverleafCudaChunk::flux_calc_kernel
 (double dbyt)

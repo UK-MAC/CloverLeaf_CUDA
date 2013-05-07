@@ -48,14 +48,7 @@ SUBROUTINE ideal_gas(chunk,predict)
                             chunks(chunk)%field%pressure,   &
                             chunks(chunk)%field%soundspeed  )
       ELSEIF(use_cuda_kernels)THEN
-        CALL ideal_gas_kernel_cuda_nopredict(chunks(chunk)%field%x_min,      &
-                                             chunks(chunk)%field%x_max,      &
-                                             chunks(chunk)%field%y_min,      &
-                                             chunks(chunk)%field%y_max,      &
-                                             chunks(chunk)%field%density0,   &
-                                             chunks(chunk)%field%energy0,    &
-                                             chunks(chunk)%field%pressure,   &
-                                             chunks(chunk)%field%soundspeed  )
+        CALL ideal_gas_kernel_cuda_nopredict()
       ELSEIF(use_C_kernels)THEN
         CALL ideal_gas_kernel_c(chunks(chunk)%field%x_min,  &
                             chunks(chunk)%field%x_max,      &
@@ -77,14 +70,7 @@ SUBROUTINE ideal_gas(chunk,predict)
                             chunks(chunk)%field%pressure,   &
                             chunks(chunk)%field%soundspeed  )
       ELSEIF(use_cuda_kernels)THEN
-        CALL ideal_gas_kernel_cuda_predict(chunks(chunk)%field%x_min,      &
-                                           chunks(chunk)%field%x_max,      &
-                                           chunks(chunk)%field%y_min,      &
-                                           chunks(chunk)%field%y_max,      &
-                                           chunks(chunk)%field%density1,   &
-                                           chunks(chunk)%field%energy1,    &
-                                           chunks(chunk)%field%pressure,   &
-                                           chunks(chunk)%field%soundspeed  )
+        CALL ideal_gas_kernel_cuda_predict()
       ELSEIF(use_C_kernels)THEN
         CALL ideal_gas_kernel_c(chunks(chunk)%field%x_min,  &
                             chunks(chunk)%field%x_max,      &

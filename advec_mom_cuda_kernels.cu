@@ -170,7 +170,6 @@ const double* __restrict const celldx,
 
         advec_vel = xvel1[THARR2D(donor, 0, 1)] + (1.0 - sigma) * limiter;
         mom_flux[THARR2D(0, 0, 1)] = advec_vel * node_flux[THARR2D(0, 0, 1)];
-
     }
 }
 
@@ -292,7 +291,6 @@ const double* __restrict const celldy,
 
         advec_vel = yvel1[THARR2D(0, donor, 1)] + (1.0 - sigma) * limiter;
         mom_flux[THARR2D(0, 0, 1)] = advec_vel * node_flux[THARR2D(0, 0, 1)];
-
     }
 }
 

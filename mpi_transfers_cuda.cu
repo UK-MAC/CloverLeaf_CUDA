@@ -22,7 +22,6 @@
  *  @details Transfers the buffers required for the mpi halo exchange
  */
 
-#include "mpi.h"
 #include <iostream>
 #include "chunk_cuda.cu"
 #include "cuda_common.cu"
@@ -97,7 +96,7 @@ const int depth)
             case TOP_FACE:\
                 CALL_PACK(dev_ptr, type, top, x);\
             default: \
-                std::cout << "Invalid side passed to buffer packing in task " << task << std::endl; \
+                std::cout << "Invalid side passed to buffer packing in " << __FILE__ << std::endl; \
                 exit(1); \
         }
 
@@ -155,7 +154,7 @@ const int depth)
             case TOP_FACE:\
                 CALL_UNPACK(dev_ptr, type, top, x);\
             default: \
-                std::cout << "Invalid side passed to buffer unpacking in task " << task << std::endl; \
+                std::cout << "Invalid side passed to buffer packing in " << __FILE__ << std::endl; \
                 exit(1); \
         }
 
