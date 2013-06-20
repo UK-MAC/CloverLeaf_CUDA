@@ -25,7 +25,13 @@
 #ifndef MIN
 #define MIN(a, b) ((a) >= (b) ? (b) : (a))
 #endif
-#define SIGN(a,b) (((b) <  (0) && (a > (0))||((b) > (0) && ((a)<(0)))) ? (-a) : (a))
+
+#ifdef __CUDA_ARCH__
+    #define SIGN(a,b) copysign(a,b)
+#else
+    #define SIGN(a,b) (((b) <  (0) && (a > (0))||((b) > (0) && ((a)<(0)))) ? (-a) : (a))
+#endif
+
 #define SQR(a) ((a)*(a))
 #endif /* _FTOC_MACROS_ */
 
