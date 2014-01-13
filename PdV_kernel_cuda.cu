@@ -32,6 +32,8 @@
 #include <algorithm>
 
 #include "chunk_cuda.cu"
+#include "thrust/extrema.h"
+
 extern CloverleafCudaChunk chunk;
 
 __global__ void device_PdV_cuda_kernel_predict

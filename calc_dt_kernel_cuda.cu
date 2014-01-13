@@ -30,6 +30,7 @@
 #include <algorithm>
 
 #include "chunk_cuda.cu"
+#include "thrust/extrema.h"
 
 extern CloverleafCudaChunk chunk;
 

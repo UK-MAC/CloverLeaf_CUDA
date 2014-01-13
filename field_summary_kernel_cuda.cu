@@ -28,6 +28,8 @@
 #include "cuda_common.cu"
 
 #include "chunk_cuda.cu"
+#include "thrust/reduce.h"
+
 extern CloverleafCudaChunk chunk;
 
 __global__ void device_field_summary_kernel_cuda
