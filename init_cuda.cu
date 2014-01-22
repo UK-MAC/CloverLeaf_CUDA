@@ -53,12 +53,14 @@ x_max(*in_x_max),
 y_min(*in_y_min),
 y_max(*in_y_max),
 profiler_on(*in_profiler_on),
-num_blocks((((*in_x_max)+4)*((*in_y_max)+4))/BLOCK_SZ)
+num_blocks((((*in_x_max)+6)*((*in_y_max)+6))/BLOCK_SZ)
 {
     #define CUDA_ARRAY_ALLOC(arr, size)     \
-        cudaMalloc((void**) &arr, size);    \
-        cudaDeviceSynchronize();            \
-        CUDA_ERR_CHECK;
+            cudaMalloc((void**) &arr, size);\
+            cudaDeviceSynchronize();        \
+            cudaMemset(arr, 0, size);       \
+            cudaDeviceSynchronize();        \
+            CUDA_ERR_CHECK;
 
     CUDA_ARRAY_ALLOC(volume, BUFSZ2D(0, 0));
     CUDA_ARRAY_ALLOC(soundspeed, BUFSZ2D(0, 0));
