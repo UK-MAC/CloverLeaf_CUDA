@@ -23,46 +23,42 @@
  */
 
 #include <iostream>
-#include "chunk_cuda.cu"
 #include "cuda_common.cu"
+#include "chunk_cuda.cu"
 
 #include <numeric>
 
 #include "pack_buffer_kernels.cu"
 
-extern CloverleafCudaChunk chunk;
+#define CHUNK_LEFT 1
+#define CHUNK_RIGHT 2
+#define CHUNK_BOTTOM 3
+#define CHUNK_TOP 4
+#define EXTERNAL_FACE (-1)
 
-// which side to pack - keep the same as in fortran file
-#define LEFT_FACE 0
-#define RIGHT_FACE 1
-#define TOP_FACE 2
-#define BOTTOM_FACE 3
+extern CloverleafCudaChunk chunk;
 
 /**********************/
 
-// pack data into buffers
-extern "C" void cudapackbuffers_
-(const int* which_array,
-const int* which_side,
-double* buffer,
-const int* buffer_size,
-const int* depth)
-{
-    chunk.packBuffer((*which_array) - 1, *which_side,
-        buffer, *buffer_size, *depth);
+// define a generic interface for fortran
+#define C_PACK_INTERFACE(operation, dir)                            \
+extern "C" void operation##_##dir##_buffers_cuda_                    \
+(int *xmin, int *xmax, int *ymin, int *ymax,                        \
+ int *chunk_1, int *chunk_2, int *external_face,                    \
+ int *x_inc, int *y_inc, int *depth, int *which_field,              \
+ double *field_ptr, double *buffer_1, double *buffer_2)             \
+{                                                                   \
+    chunk.operation##_##dir(*chunk_1, *chunk_2, *external_face,     \
+                            *x_inc, *y_inc, *depth,                 \
+                            (*which_field)-1, buffer_1, buffer_2);  \
 }
 
-// unpack from buffers
-extern "C" void cudaunpackbuffers_
-(const int* which_array,
-const int* which_side,
-double* buffer,
-const int* buffer_size,
-const int* depth)
-{
-    chunk.unpackBuffer((*which_array) - 1, *which_side,
-        buffer, *buffer_size, *depth);
-}
+C_PACK_INTERFACE(pack, left_right)
+C_PACK_INTERFACE(unpack, left_right)
+C_PACK_INTERFACE(pack, top_bottom)
+C_PACK_INTERFACE(unpack, top_bottom)
+
+/*****************************/
 
 void CloverleafCudaChunk::packBuffer
 (const int which_array,
@@ -87,13 +83,13 @@ const int depth)
     #define PACK_CUDA_BUFFERS(dev_ptr, type) \
         switch(which_side) \
         { \
-            case LEFT_FACE: \
+            case CHUNK_LEFT: \
                 CALL_PACK(dev_ptr, type, left, y);\
-            case RIGHT_FACE:\
+            case CHUNK_RIGHT:\
                 CALL_PACK(dev_ptr, type, right, y);\
-            case BOTTOM_FACE:\
+            case CHUNK_BOTTOM:\
                 CALL_PACK(dev_ptr, type, bottom, x);\
-            case TOP_FACE:\
+            case CHUNK_TOP:\
                 CALL_PACK(dev_ptr, type, top, x);\
             default: \
                 std::cout << "Invalid side passed to buffer packing in " << __FILE__ << std::endl; \
@@ -145,13 +141,13 @@ const int depth)
     #define UNPACK_CUDA_BUFFERS(dev_ptr, type) \
         switch(which_side) \
         { \
-            case LEFT_FACE: \
+            case CHUNK_LEFT: \
                 CALL_UNPACK(dev_ptr, type, left, y);\
-            case RIGHT_FACE:\
+            case CHUNK_RIGHT:\
                 CALL_UNPACK(dev_ptr, type, right, y);\
-            case BOTTOM_FACE:\
+            case CHUNK_BOTTOM:\
                 CALL_UNPACK(dev_ptr, type, bottom, x);\
-            case TOP_FACE:\
+            case CHUNK_TOP:\
                 CALL_UNPACK(dev_ptr, type, top, x);\
             default: \
                 std::cout << "Invalid side passed to buffer packing in " << __FILE__ << std::endl; \
@@ -178,5 +174,89 @@ const int depth)
         default: std::cerr << "Invalid which_array identifier passed to CUDA for MPI transfer" << std::endl; exit(1);
     }
 
+}
+
+int CloverleafCudaChunk::getBufferSize
+(int edge, int depth, int x_inc, int y_inc)
+{
+    int region[2];
+
+    switch (edge)
+    {
+    // depth*y_max+... region - 1 or 2 columns
+    case CHUNK_LEFT:
+        region[0] = depth;
+        region[1] = y_max + y_inc + (2*depth);
+        break;
+    case CHUNK_RIGHT:
+        region[0] = depth;
+        region[1] = y_max + y_inc + (2*depth);
+        break;
+
+    // depth*x_max+... region - 1 or 2 rows
+    case CHUNK_BOTTOM:
+        region[0] = x_max + x_inc + (2*depth);
+        region[1] = depth;
+        break;
+    case CHUNK_TOP:
+        region[0] = x_max + x_inc + (2*depth);
+        region[1] = depth;
+        break;
+    default:
+        std::cerr << "Invalid face identifier " << edge << " passed to left/right pack buffer" << std::endl;
+        exit(1);
+    }
+
+    return region[0]*region[1];
+}
+
+#define CHECK_PACK(op, side1, side2)                          \
+    if (external_face != chunk_1 || external_face != chunk_2)               \
+    {                                                                       \
+        cudaDeviceSynchronize();                                            \
+    } \
+    if (external_face != chunk_1)                                           \
+    {                                                                       \
+        op##Buffer(which_field, \
+                   chunk_1, \
+                   buffer_1, \
+                   getBufferSize(chunk_1, depth, x_inc, y_inc), \
+                   depth); \
+    }                                                                       \
+    if (external_face != chunk_2)                                           \
+    {                                                                       \
+        op##Buffer(which_field, \
+                   chunk_2, \
+                   buffer_2, \
+                   getBufferSize(chunk_2, depth, x_inc, y_inc), \
+                   depth); \
+    }                                                                       \
+    if (external_face != chunk_1 || external_face != chunk_2)               \
+    {                                                                       \
+        cudaDeviceSynchronize();                                            \
+    }
+
+void CloverleafCudaChunk::pack_left_right
+(PACK_ARGS)
+{
+    CHECK_PACK(pack, CHUNK_LEFT, CHUNK_RIGHT);
+}
+
+void CloverleafCudaChunk::unpack_left_right
+(PACK_ARGS)
+{
+    CHECK_PACK(unpack, CHUNK_LEFT, CHUNK_RIGHT);
+}
+
+void CloverleafCudaChunk::pack_top_bottom
+(PACK_ARGS)
+{
+    CHECK_PACK(pack, CHUNK_BOTTOM, CHUNK_TOP);
+}
+
+void CloverleafCudaChunk::unpack_top_bottom
+(PACK_ARGS)
+{
+    CHECK_PACK(unpack, CHUNK_BOTTOM, CHUNK_TOP);
 }
 

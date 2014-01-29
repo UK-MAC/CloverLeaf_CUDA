@@ -33,6 +33,7 @@
 #include "cuda_common.cu"
 
 #include "thrust/device_allocator.h"
+#include "thrust/extrema.h"
 
 class CloverleafCudaChunk
 {
@@ -164,6 +165,25 @@ public:
         double* buffer, const int buffer_size, const int depth);
     void unpackBuffer (const int which_array, const int which_side,
         double* buffer, const int buffer_size, const int depth);
+
+    void packRect
+    (double* host_buffer, cudaMemcpyKind direction,
+     int x_inc, int y_inc, int edge, int dest,
+     int which_field, int depth);
+
+    int getBufferSize
+    (int edge, int depth, int x_inc, int y_inc);
+
+    // mpi packing
+    #define PACK_ARGS                                       \
+        int chunk_1, int chunk_2, int external_face,        \
+        int x_inc, int y_inc, int depth, int which_field,   \
+        double *buffer_1, double *buffer_2
+
+    void pack_left_right(PACK_ARGS);
+    void unpack_left_right(PACK_ARGS);
+    void pack_top_bottom(PACK_ARGS);
+    void unpack_top_bottom(PACK_ARGS);
 
     CloverleafCudaChunk
     (INITIALISE_ARGS);

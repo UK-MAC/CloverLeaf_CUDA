@@ -106,7 +106,6 @@ clover_leaf: cuda_clover c_lover *.f90
 	pack_kernel.f90 \
 	data.f90			\
 	definitions.f90			\
-	cufor_mpi_interop.f90	\
 	clover.f90			\
 	report.f90			\
 	timer.f90			\
