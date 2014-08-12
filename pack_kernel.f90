@@ -25,17 +25,17 @@ CONTAINS
 
 SUBROUTINE pack_left_right_buffers(x_min,x_max,y_min,y_max,              &
                                    chunk_left,chunk_right,external_face, &
-                                   x_inc,y_inc,depth,                    &
+                                   x_inc,y_inc,depth,size,               &
                                    field,left_snd_buffer,right_snd_buffer)
 
   IMPLICIT NONE
 
   INTEGER      :: x_min,x_max,y_min,y_max
   INTEGER      :: chunk_left,chunk_right,external_face
-  INTEGER      :: x_inc,y_inc,depth
+  INTEGER      :: x_inc,y_inc,depth,size
 
-  REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
-  REAL(KIND=8) :: left_snd_buffer(:),right_snd_buffer(:)
+  REAL(KIND=8) :: field(x_min-2:x_max+2+x_inc, y_min-2:y_max+2+y_inc) ! This seems to work for any type of mesh data
+  REAL(KIND=8) :: left_snd_buffer(2*(y_max+5)),right_snd_buffer(2*(y_max+5))
 
   INTEGER      :: j,k,index
 
@@ -66,17 +66,17 @@ END SUBROUTINE pack_left_right_buffers
 
 SUBROUTINE unpack_left_right_buffers(x_min,x_max,y_min,y_max,              &
                                      chunk_left,chunk_right,external_face, &
-                                     x_inc,y_inc,depth,                    &
+                                     x_inc,y_inc,depth,size,               &
                                      field,left_rcv_buffer,right_rcv_buffer)
 
   IMPLICIT NONE
 
   INTEGER      :: x_min,x_max,y_min,y_max
   INTEGER      :: chunk_left,chunk_right,external_face
-  INTEGER      :: x_inc,y_inc,depth
+  INTEGER      :: x_inc,y_inc,depth,size
 
-  REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
-  REAL(KIND=8) :: left_rcv_buffer(:),right_rcv_buffer(:)
+  REAL(KIND=8) :: field(x_min-2:x_max+2+x_inc, y_min-2:y_max+2+y_inc) ! This seems to work for any type of mesh data
+  REAL(KIND=8) :: left_rcv_buffer(2*(y_max+5)),right_rcv_buffer(2*(y_max+5))
 
   INTEGER      :: j,k,index
 
@@ -107,17 +107,17 @@ END SUBROUTINE unpack_left_right_buffers
 
 SUBROUTINE pack_top_bottom_buffers(x_min,x_max,y_min,y_max,              &
                                    chunk_bottom,chunk_top,external_face, &
-                                   x_inc,y_inc,depth,                    &
+                                   x_inc,y_inc,depth,size,               &
                                    field,bottom_snd_buffer,top_snd_buffer)
 
   IMPLICIT NONE
 
   INTEGER      :: x_min,x_max,y_min,y_max
   INTEGER      :: chunk_bottom,chunk_top,external_face
-  INTEGER      :: x_inc,y_inc,depth
+  INTEGER      :: x_inc,y_inc,depth,size
 
-  REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
-  REAL(KIND=8) :: bottom_snd_buffer(:),top_snd_buffer(:)
+  REAL(KIND=8) :: field(x_min-2:x_max+2+x_inc, y_min-2:y_max+2+y_inc) ! This seems to work for any type of mesh data
+  REAL(KIND=8) :: bottom_snd_buffer(2*(x_max+5)),top_snd_buffer(2*(x_max+5))
 
   INTEGER      :: j,k,index
 
@@ -148,17 +148,17 @@ END SUBROUTINE pack_top_bottom_buffers
 
 SUBROUTINE unpack_top_bottom_buffers(x_min,x_max,y_min,y_max,             &
                                     chunk_bottom,chunk_top,external_face, &
-                                    x_inc,y_inc,depth,                    &
+                                    x_inc,y_inc,depth,size,               &
                                     field,bottom_rcv_buffer,top_rcv_buffer)
 
   IMPLICIT NONE
 
   INTEGER      :: x_min,x_max,y_min,y_max
   INTEGER      :: chunk_bottom,chunk_top,external_face
-  INTEGER      :: x_inc,y_inc,depth
+  INTEGER      :: x_inc,y_inc,depth,size
 
-  REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
-  REAL(KIND=8) :: bottom_rcv_buffer(:),top_rcv_buffer(:)
+  REAL(KIND=8) :: field(x_min-2:x_max+2+x_inc, y_min-2:y_max+2+y_inc) ! This seems to work for any type of mesh data
+  REAL(KIND=8) :: bottom_rcv_buffer(2*(x_max+5)),top_rcv_buffer(2*(x_max+5))
 
   INTEGER      :: j,k,index
 

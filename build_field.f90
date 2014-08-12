@@ -26,7 +26,7 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
 
    IMPLICIT NONE
 
-   INTEGER :: chunk,x_cells,y_cells
+   INTEGER :: chunk,x_cells,y_cells,profiler_int
 
    chunks(chunk)%field%x_min=1
    chunks(chunk)%field%y_min=1
@@ -34,13 +34,19 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    chunks(chunk)%field%x_max=x_cells
    chunks(chunk)%field%y_max=y_cells
 
-   IF(use_cuda_kernels) THEN
+   IF (use_cuda_kernels .eqv. .true.) THEN
 
-        CALL initialise_cuda(chunks(chunk)%field%x_min,  &
-                             chunks(chunk)%field%x_max,  &
-                             chunks(chunk)%field%y_min,  &
-                             chunks(chunk)%field%y_max,  &
-                             profiler_on);
+     IF(profiler_on) THEN
+       profiler_int=1
+     ELSE
+       profiler_int=0
+     ENDIF
+
+     call initialise_cuda(chunks(chunk)%field%x_min, &
+                         chunks(chunk)%field%x_max, &
+                         chunks(chunk)%field%y_min, &
+                         chunks(chunk)%field%y_max, &
+                         profiler_int)
 
     ELSE 
 
