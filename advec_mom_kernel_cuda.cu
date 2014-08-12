@@ -22,20 +22,15 @@
  *  @details CUDA momentum advection driver.
  */
 
-#include <iostream>
-#include "ftocmacros.h"
-#include "cuda_common.cu"
-#include "advec_mom_cuda_kernels.cu"
-
-#include "chunk_cuda.cu"
-extern CloverleafCudaChunk chunk;
+#include "cuda_common.hpp"
+#include "kernel_files/advec_mom_kernel.cuknl"
 
 extern "C" void advec_mom_kernel_cuda_
 (int *whch_vl,
 int *swp_nmbr,
 int *drctn)
 {
-    chunk.advec_mom_kernel(*whch_vl, *swp_nmbr, *drctn);
+    cuda_chunk.advec_mom_kernel(*whch_vl, *swp_nmbr, *drctn);
 }
 
 void CloverleafCudaChunk::advec_mom_kernel
@@ -43,12 +38,9 @@ void CloverleafCudaChunk::advec_mom_kernel
 {
     int mom_sweep = direction + (2 * (sweep_number - 1));
 
-    CUDA_BEGIN_PROFILE;
-
-    device_advec_mom_vol_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-    (x_min, x_max, y_min, y_max, mom_sweep, work_array_1, work_array_2, volume,
+    CUDALAUNCH(device_advec_mom_vol_kernel_cuda,
+        mom_sweep, work_array_1, work_array_2, volume,
         vol_flux_x, vol_flux_y);
-    CUDA_ERR_CHECK;
 
     /*
     post_vol = work array 1
@@ -70,47 +62,37 @@ void CloverleafCudaChunk::advec_mom_kernel
 
     if (direction == 1)
     {
-        device_advec_mom_node_flux_post_x_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, mass_flux_x,
+        CUDALAUNCH(device_advec_mom_node_flux_post_x_kernel_cuda,
+            work_array_2, work_array_3, mass_flux_x,
             work_array_1, density1);
-        CUDA_ERR_CHECK;
 
-        device_advec_mom_node_pre_x_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, work_array_4);
-        CUDA_ERR_CHECK;
+        CUDALAUNCH(device_advec_mom_node_pre_x_kernel_cuda,
+            work_array_2, work_array_3, work_array_4);
 
-        device_advec_mom_flux_x_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, work_array_4,
+        CUDALAUNCH(device_advec_mom_flux_x_kernel_cuda,
+            work_array_2, work_array_3, work_array_4,
             vel1, celldx, work_array_5);
-        CUDA_ERR_CHECK;
 
-        device_advec_mom_xvel_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_3, work_array_4, work_array_5,
+        CUDALAUNCH(device_advec_mom_xvel_kernel_cuda,
+            work_array_3, work_array_4, work_array_5,
             vel1);
-        CUDA_ERR_CHECK;
     }
     else if (direction == 2)
     {
-        device_advec_mom_node_flux_post_y_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, mass_flux_y,
+        CUDALAUNCH(device_advec_mom_node_flux_post_y_kernel_cuda,
+            work_array_2, work_array_3, mass_flux_y,
             work_array_1, density1);
-        CUDA_ERR_CHECK;
 
-        device_advec_mom_node_pre_y_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, work_array_4);
-        CUDA_ERR_CHECK;
+        CUDALAUNCH(device_advec_mom_node_pre_y_kernel_cuda,
+            work_array_2, work_array_3, work_array_4);
 
-        device_advec_mom_flux_y_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_2, work_array_3, work_array_4,
+        CUDALAUNCH(device_advec_mom_flux_y_kernel_cuda,
+            work_array_2, work_array_3, work_array_4,
             vel1, celldy, work_array_5);
-        CUDA_ERR_CHECK;
 
-        device_advec_mom_yvel_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-        (x_min, x_max, y_min, y_max, work_array_3, work_array_4, work_array_5,
+        CUDALAUNCH(device_advec_mom_yvel_kernel_cuda,
+            work_array_3, work_array_4, work_array_5,
             vel1);
-        CUDA_ERR_CHECK;
     }
-
-    CUDA_END_PROFILE;
 }
 

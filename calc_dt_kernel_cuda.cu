@@ -24,109 +24,8 @@
  *  factor is used to ensure numerical stability.
  */
 
-#include <iostream>
-#include "cuda_common.cu"
-#include "ftocmacros.h"
-#include <algorithm>
-
-#include "chunk_cuda.cu"
-#include "thrust/extrema.h"
-
-extern CloverleafCudaChunk chunk;
-
-__global__ void device_calc_dt_kernel_cuda
-(int x_min, int x_max, int y_min, int y_max,
-const double g_small,
-const double g_big,
-const double dtmin,
-const double dtc_safe,
-const double dtu_safe,
-const double dtv_safe,
-const double dtdiv_safe,
-const double* __restrict const xarea,
-const double* __restrict const yarea,
-const double* __restrict const celldx,
-const double* __restrict const celldy,
-const double* __restrict const volume,
-const double* __restrict const density0,
-const double* __restrict const viscosity,
-const double* __restrict const soundspeed,
-const double* __restrict const xvel0,
-const double* __restrict const yvel0,
-      double* __restrict const jk_ctrl_out,
-      double* __restrict const dt_min_out)
-{
-    __kernel_indexes;
-
-    double dsx, dsy;
-    double cc;
-    double dtct;
-    double div;
-    double dv1;
-    double dv2;
-    double dtut;
-    double dtvt;
-    double dtdivt;
-
-    double dt_min_val = g_big;
-    double jk_control = 0.0;
-
-    __shared__ double dt_min_shared[BLOCK_SZ];
-    __shared__ double jk_ctrl_shared[BLOCK_SZ];
-    dt_min_shared[threadIdx.x] = dt_min_val;
-    jk_ctrl_shared[threadIdx.x] = jk_control;
-
-    if (row >= (y_min + 1) && row <= (y_max + 1)
-    && column >= (x_min + 1) && column <= (x_max + 1))
-    {
-        dsx = celldx[column];
-        dsy = celldy[row];
-
-        cc = soundspeed[THARR2D(0, 0, 0)] * soundspeed[THARR2D(0, 0, 0)];
-        cc += 2.0 * viscosity[THARR2D(0, 0, 0)] / density0[THARR2D(0, 0, 0)];
-        cc = MAX(sqrt(cc), g_small);
-
-        dtct = dtc_safe * MIN(dsx, dsy)/cc;
-
-        div = 0.0;
-
-        // x
-        dv1 = (xvel0[THARR2D(0, 0, 1)] + xvel0[THARR2D(0, 1, 1)])
-            * xarea[THARR2D(0, 0, 1)];
-        dv2 = (xvel0[THARR2D(1, 0, 1)] + xvel0[THARR2D(1, 1, 1)])
-            * xarea[THARR2D(1, 0, 1)];
-
-        div += dv2 - dv1;
-
-        dtut = dtu_safe * 2.0 * volume[THARR2D(0, 0, 0)]
-            / MAX(g_small*volume[THARR2D(0, 0, 0)], 
-            MAX(fabs(dv1), fabs(dv2)));
-
-        // y
-        dv1 = (yvel0[THARR2D(0, 0, 1)] + yvel0[THARR2D(1, 0, 1)])
-            * yarea[THARR2D(0, 0, 0)];
-        dv2 = (yvel0[THARR2D(0, 1, 1)] + yvel0[THARR2D(1, 1, 1)])
-            * yarea[THARR2D(0, 1, 0)];
-
-        div += dv2 - dv1;
-
-        dtvt = dtv_safe * 2.0 * volume[THARR2D(0, 0, 0)]
-            / MAX(g_small*volume[THARR2D(0, 0, 0)], 
-            MAX(fabs(dv1), fabs(dv2)));
-
-        //
-        div /= (2.0 * volume[THARR2D(0, 0, 0)]);
-
-        dtdivt = (div < (-g_small)) ? dtdiv_safe * (-1.0/div) : g_big;
-
-        dt_min_shared[threadIdx.x] = MIN(dtdivt, MIN(dtvt, MIN(dtct, dtut)));
-
-        jk_ctrl_shared[threadIdx.x] = (column + (x_max * (row - 1))) + 0.4;
-    }
-
-    Reduce< BLOCK_SZ/2 >::run(dt_min_shared, dt_min_out, min_func);
-    Reduce< BLOCK_SZ/2 >::run(jk_ctrl_shared, jk_ctrl_out, max_func);
-}
+#include "cuda_common.hpp"
+#include "kernel_files/calc_dt_kernel.cuknl"
 
 extern "C" void calc_dt_kernel_cuda_
 (double* g_small,
@@ -144,7 +43,7 @@ int* jldt,
 int* kldt,
 int* small)
 {
-    chunk.calc_dt_kernel(*g_small, *g_big, *dtmin, *dtc_safe, *dtu_safe,
+    cuda_chunk.calc_dt_kernel(*g_small, *g_big, *dtmin, *dtc_safe, *dtu_safe,
         *dtv_safe, *dtdiv_safe, dt_min_val, dtl_control, xl_pos, yl_pos,
         jldt, kldt, small);
 }
@@ -160,14 +59,10 @@ int* jldt,
 int* kldt,
 int* small)
 {
-    CUDA_BEGIN_PROFILE;
-
-    device_calc_dt_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-    (x_min, x_max, y_min, y_max, g_small, g_big, dtmin, dtc_safe,
+    CUDALAUNCH(device_calc_dt_kernel_cuda, g_small, g_big, dtmin, dtc_safe,
         dtu_safe, dtv_safe, dtdiv_safe, xarea, yarea, celldx, celldy,
         volume, density0, viscosity, soundspeed, xvel0, yvel0,
-        work_array_1, work_array_2);
-    CUDA_ERR_CHECK;
+        reduce_buf_1, reduce_buf_2);
 
     // reduce_ptr 2 is a thrust wrapper around work_array_2
     *dt_min_val = *thrust::min_element(reduce_ptr_2,
@@ -176,8 +71,6 @@ int* small)
     // ditto on reduce ptr 1
     double jk_control = *thrust::max_element(reduce_ptr_1,
                                              reduce_ptr_1 + num_blocks);
-
-    CUDA_END_PROFILE;
 
     *dtl_control = 10.01 * (jk_control - static_cast<int>(jk_control));
 

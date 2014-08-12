@@ -48,7 +48,7 @@ SUBROUTINE ideal_gas(chunk,predict)
                             chunks(chunk)%field%pressure,   &
                             chunks(chunk)%field%soundspeed  )
       ELSEIF(use_cuda_kernels)THEN
-        CALL ideal_gas_kernel_cuda_nopredict()
+        CALL ideal_gas_kernel_nopredict_cuda()
       ELSEIF(use_C_kernels)THEN
         CALL ideal_gas_kernel_c(chunks(chunk)%field%x_min,  &
                             chunks(chunk)%field%x_max,      &
@@ -70,7 +70,7 @@ SUBROUTINE ideal_gas(chunk,predict)
                             chunks(chunk)%field%pressure,   &
                             chunks(chunk)%field%soundspeed  )
       ELSEIF(use_cuda_kernels)THEN
-        CALL ideal_gas_kernel_cuda_predict()
+        CALL ideal_gas_kernel_predict_cuda()
       ELSEIF(use_C_kernels)THEN
         CALL ideal_gas_kernel_c(chunks(chunk)%field%x_min,  &
                             chunks(chunk)%field%x_max,      &

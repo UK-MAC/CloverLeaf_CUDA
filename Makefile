@@ -54,16 +54,6 @@ CFLAGS_PATHSCALE = -O2
 CFLAGS_XLF       = -O2
 CFLAGS_          = -O2
 
-# flags for nvcc
-# set NV_ARCH to select the correct one
-CODE_GEN_FERMI=-gencode arch=compute_20,code=sm_21
-CODE_GEN_KEPLER=-gencode arch=compute_35,code=sm_35
-
-# requires CUDA_HOME to be set - not the same on all machines
-NV_FLAGS=-O2 -I$(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -restrict
-NV_FLAGS+=-DNO_ERR_CHK
-#NV_FLAGS+=-DTIME_KERNELS
-
 ifdef DEBUG
   FLAGS_INTEL     = -O0 -g -debug all -check all -traceback -check noarg_temp_created
   FLAGS_SUN       = -O0 -xopenmp=noopt -g
@@ -89,127 +79,135 @@ ifdef IEEE
   I3E=$(I3E_$(COMPILER))
 endif
 
-CPPLIBS_PGI=-pgcpplibs
-CPPLIBS_GNU=-lstdc++
-CPPLIBS=$(CPPLIBS_$(COMPILER))
+# flags for nvcc
+# set NV_ARCH to select the correct one
+NV_ARCH=KEPLER
+CODE_GEN_FERMI=-gencode arch=compute_20,code=sm_21
+CODE_GEN_KEPLER=-gencode arch=compute_35,code=sm_35
 
-FLAGS=$(FLAGS_$(COMPILER)) $(OMP) $(I3E) $(OPTIONS) $(RESIDENT_FLAG)
+LDLIBS+=-lstdc++ -lcudart
+
+FLAGS=$(FLAGS_$(COMPILER)) $(OMP) $(I3E) $(OPTIONS)
 CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP) $(I3E) $(C_OPTIONS) -c
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
 
-all: clover_leaf
-	rm -f *.o *.mod *genmod* *.lst
+CXXFLAGS+=$(CFLAGS)
 
-clover_leaf: cuda_clover c_lover *.f90
-	$(MPI_COMPILER) $(FLAGS)	\
-	pack_kernel.f90 \
-	data.f90			\
-	definitions.f90			\
-	clover.f90			\
-	report.f90			\
-	timer.f90			\
-	parse.f90			\
-	read_input.f90			\
-	initialise_chunk_kernel.f90	\
-	initialise_chunk.f90		\
-	build_field.f90			\
-	update_halo_kernel.f90		\
-	update_halo.f90			\
-	ideal_gas_kernel.f90		\
-	ideal_gas.f90			\
-	start.f90			\
-	generate_chunk_kernel.f90	\
-	generate_chunk.f90		\
-	initialise.f90			\
-	field_summary_kernel.f90	\
-	field_summary.f90		\
-	viscosity_kernel.f90		\
-	viscosity.f90			\
-	calc_dt_kernel.f90		\
-	calc_dt.f90			\
-	timestep.f90			\
-	accelerate_kernel.f90		\
-	accelerate.f90			\
-	revert_kernel.f90		\
-	revert.f90			\
-	PdV_kernel.f90			\
-	PdV.f90				\
-	flux_calc_kernel.f90		\
-	flux_calc.f90			\
-	advec_cell_kernel.f90		\
-	advec_cell_driver.f90		\
-	advec_mom_kernel.f90		\
-	advec_mom_driver.f90		\
-	advection.f90			\
-	reset_field_kernel.f90		\
-	reset_field.f90			\
-	hydro.f90			\
-	visit.f90			\
-	clover_leaf.f90			\
+# requires CUDA_HOME to be set - not the same on all machines
+NV_FLAGS=-I$(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -restrict -Xcompiler "$(CFLAGS_GNU)" -D MPI_HDR
+NV_FLAGS+=-DNO_ERR_CHK
+
+ifdef DEBUG
+NV_FLAGS+=-O0 -g -G
+else
+NV_FLAGS+=-O3
+endif
+
+C_FILES=\
 	accelerate_kernel_c.o           \
+	pack_kernel_c.o \
+	PdV_kernel_c.o                  \
+	timer_c.o                  \
+	initialise_chunk_kernel_c.o                  \
+	calc_dt_kernel_c.o                  \
+	field_summary_kernel_c.o                  \
+	update_halo_kernel_c.o                  \
+	generate_chunk_kernel_c.o                  \
+	flux_calc_kernel_c.o            \
 	revert_kernel_c.o               \
 	reset_field_kernel_c.o          \
-	pack_kernel_c.o            \
-	advec_mom_kernel_c.o            \
-	PdV_kernel_c.o                  \
-	flux_calc_kernel_c.o            \
 	ideal_gas_kernel_c.o            \
-	advec_cell_kernel_c.o           \
 	viscosity_kernel_c.o            \
-	initialise_chunk_kernel_c.o		\
-	update_halo_kernel_c.o		\
-	generate_chunk_kernel_c.o		\
-	calc_dt_kernel_c.o		\
-	field_summary_kernel_c.o		\
-	timer_c.o                       \
-	$(CUDA_FILES)	\
-	-L $(CUDA_HOME)/lib64 -lcudart $(CPPLIBS) 	\
+	advec_cell_kernel_c.o			\
+	advec_mom_kernel_c.o
+
+FORTRAN_FILES=\
+	clover.o \
+	pack_kernel.o \
+	data.o			\
+	definitions.o			\
+	report.o			\
+	timer.o			\
+	parse.o			\
+	read_input.o			\
+	initialise_chunk_kernel.o	\
+	initialise_chunk.o		\
+	build_field.o			\
+	update_halo_kernel.o		\
+	update_halo.o			\
+	ideal_gas_kernel.o		\
+	ideal_gas.o			\
+	start.o			\
+	generate_chunk_kernel.o	\
+	generate_chunk.o		\
+	initialise.o			\
+	field_summary_kernel.o	\
+	field_summary.o		\
+	viscosity_kernel.o		\
+	viscosity.o			\
+	calc_dt_kernel.o		\
+	calc_dt.o			\
+	timestep.o			\
+	accelerate_kernel.o		\
+	accelerate.o			\
+	revert_kernel.o		\
+	revert.o			\
+	PdV_kernel.o			\
+	PdV.o				\
+	flux_calc_kernel.o		\
+	flux_calc.o			\
+	advec_cell_kernel.o		\
+	advec_cell_driver.o		\
+	advec_mom_kernel.o		\
+	advec_mom_driver.o		\
+	advection.o			\
+	reset_field_kernel.o		\
+	reset_field.o			\
+	hydro.o			\
+	visit.o			\
+	clover_leaf.o
+
+CUDA_FILES= \
+	accelerate_kernel_cuda.o \
+	advec_cell_kernel_cuda.o \
+	advec_mom_kernel_cuda.o \
+	calc_dt_kernel_cuda.o \
+	cuda_errors.o \
+	cuda_strings.o \
+	field_summary_kernel_cuda.o \
+	flux_calc_kernel_cuda.o \
+	generate_chunk_kernel_cuda.o \
+	ideal_gas_kernel_cuda.o \
+	init_cuda.o \
+	initialise_chunk_kernel_cuda.o \
+	pack_kernel_cuda.o \
+	PdV_kernel_cuda.o \
+	reset_field_kernel_cuda.o \
+	revert_kernel_cuda.o \
+	update_halo_kernel_cuda.o \
+	viscosity_kernel_cuda.o
+
+clover_leaf: Makefile $(FORTRAN_FILES) $(C_FILES) $(CUDA_FILES)
+	$(MPI_COMPILER) $(FLAGS)	\
+	$(FORTRAN_FILES)	\
+	$(C_FILES)	\
+	$(CUDA_FILES) \
+	$(LDFLAGS) \
+	$(LDLIBS) \
 	-o clover_leaf
+	@echo $(MESSAGE)
 
-c_lover: 
-	$(C_MPI_COMPILER) $(CFLAGS)     \
-	accelerate_kernel_c.c           \
-	PdV_kernel_c.c                  \
-	flux_calc_kernel_c.c            \
-	pack_kernel_c.c            \
-	revert_kernel_c.c               \
-	reset_field_kernel_c.c          \
-	ideal_gas_kernel_c.c            \
-	viscosity_kernel_c.c            \
-	advec_mom_kernel_c.c		\
-	initialise_chunk_kernel_c.c		\
-	update_halo_kernel_c.c		\
-	generate_chunk_kernel_c.c		\
-	calc_dt_kernel_c.c		\
-	field_summary_kernel_c.c		\
-	advec_cell_kernel_c.c		\
-	timer_c.c            
+include make.deps
 
-CUDA_FILES=\
-	mpi_transfers_cuda.o\
-	advec_cell_kernel_cuda.o\
-	advec_mom_kernel_cuda.o\
-	generate_chunk_kernel_cuda.o\
-	reset_field_kernel_cuda.o\
-	viscosity_kernel_cuda.o\
-	initialise_chunk_kernel_cuda.o\
-	revert_kernel_cuda.o\
-	chunk_cuda.o\
-	flux_calc_kernel_cuda.o\
-	init_cuda.o\
-	accelerate_kernel_cuda.o\
-	calc_dt_kernel_cuda.o\
-	field_summary_kernel_cuda.o\
-	PdV_kernel_cuda.o\
-	ideal_gas_kernel_cuda.o\
-	update_halo_kernel_cuda.o
-
-cuda_clover: $(CUDA_FILES)
-
-%.o: %.cu 
-	nvcc $(NV_FLAGS) -c $<
+%.o: %.cu Makefile make.deps
+	nvcc $(NV_FLAGS) -c $< -o $*.o
+%.mod %_module.mod %_leaf_module.mod: %.f90 %.o
+	@true
+%.o: %.f90 Makefile make.deps
+	$(MPI_COMPILER) $(FLAGS) -c $< -o $*.o
+%.o: %.c Makefile make.deps
+	$(C_MPI_COMPILER) $(CFLAGS) -c $< -o $*.o
 
 clean:
-	rm -f *.o *.mod *genmod* *.lst
-
+	rm -f *.o *.mod *genmod* *.lst *.cub *.ptx clover_leaf

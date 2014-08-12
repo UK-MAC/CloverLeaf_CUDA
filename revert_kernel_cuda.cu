@@ -25,46 +25,19 @@
  *  left in to remain relevant to the full method.
  */
 
-
-#include <iostream>
-#include "ftocmacros.h"
-#include "cuda_common.cu"
-
-#include "chunk_cuda.cu"
-extern CloverleafCudaChunk chunk;
-
-__global__ void device_revert_kernel_cuda
-(int x_min, int x_max, int y_min, int y_max,
-const double* __restrict const density0,
-      double* __restrict const density1,
-const double* __restrict const energy0,
-      double* __restrict const energy1)
-{
-    __kernel_indexes;
-
-    if (row >= (y_min + 1) && row <= (y_max + 1)
-    && column >= (x_min + 1) && column <= (x_max + 1))
-    {
-        density1[THARR2D(0, 0, 0)] = density0[THARR2D(0, 0, 0)];
-        energy1[THARR2D(0, 0, 0)] = energy0[THARR2D(0, 0, 0)];
-    }
-}
+#include "cuda_common.hpp"
+#include "kernel_files/revert_kernel.cuknl"
 
 extern "C" void revert_kernel_cuda_
 (void)
 {
-    chunk.revert_kernel();
+    cuda_chunk.revert_kernel();
 }
 
 void CloverleafCudaChunk::revert_kernel
 (void)
 {
-    CUDA_BEGIN_PROFILE;
-
-    device_revert_kernel_cuda<<< num_blocks, BLOCK_SZ >>>
-    (x_min,x_max,y_min,y_max, density0, density1, energy0, energy1);
-    CUDA_ERR_CHECK;
-
-    CUDA_END_PROFILE;
+    CUDALAUNCH(device_revert_kernel_cuda,
+        density0, density1, energy0, energy1);
 }
 
