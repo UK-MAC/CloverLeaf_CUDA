@@ -183,10 +183,6 @@ private:
     double* vertexdx;
     double* vertexdy;
 
-    double* u;
-    double* z;
-    double* u0;
-
     // used in calc_dt to retrieve values
     thrust::device_ptr< double > thr_cellx;
     thrust::device_ptr< double > thr_celly;
@@ -298,7 +294,7 @@ public:
         double* xl_pos, double* yl_pos, int* jldt, int* kldt, int* small);
 
     void field_summary_kernel(double* vol, double* mass,
-        double* ie, double* ke, double* press, double* temp);
+        double* ie, double* ke, double* press);
 
     void PdV_kernel(int* error_condition, int predict, double dbyt);
 
@@ -328,7 +324,6 @@ public:
 
     void revert_kernel();
 
-    void set_field_kernel();
     void reset_field_kernel();
 
     void viscosity_kernel();

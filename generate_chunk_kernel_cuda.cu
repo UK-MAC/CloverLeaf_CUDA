@@ -92,7 +92,7 @@ const int g_point)
     for (int state = 1; state < number_of_states; state++)
     {
         CUDALAUNCH(device_generate_chunk_kernel_cuda, 
-            vertexx, vertexy, cellx, celly, density0, energy0, xvel0, yvel0, u,
+            vertexx, vertexy, cellx, celly, density0, energy0, xvel0, yvel0,
             state_density_d, state_energy_d, state_xvel_d,
             state_yvel_d, state_xmin_d, state_xmax_d, state_ymin_d, state_ymax_d,
             state_radius_d, state_geometry_d, g_rect, g_circ, g_point, state);

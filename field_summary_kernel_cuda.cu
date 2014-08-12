@@ -27,18 +27,18 @@
 #include "kernel_files/field_summary_kernel.cuknl"
 
 extern "C" void field_summary_kernel_cuda_
-(double* vol, double* mass, double* ie, double* ke, double* press, double* temp)
+(double* vol, double* mass, double* ie, double* ke, double* press)
 {
-    cuda_chunk.field_summary_kernel(vol, mass, ie, ke, press, temp);
+    cuda_chunk.field_summary_kernel(vol, mass, ie, ke, press);
 }
 
 void CloverleafCudaChunk::field_summary_kernel
-(double* vol, double* mass, double* ie, double* ke, double* press, double* temp)
+(double* vol, double* mass, double* ie, double* ke, double* press)
 {
     CUDALAUNCH(device_field_summary_kernel_cuda, volume, density0,
-        energy0, pressure, xvel0, yvel0, u,
+        energy0, pressure, xvel0, yvel0,
         reduce_buf_1, reduce_buf_2, reduce_buf_3,
-        reduce_buf_4, reduce_buf_5, reduce_buf_6);
+        reduce_buf_4, reduce_buf_5);
 
     *vol = thrust::reduce(reduce_ptr_1,
                           reduce_ptr_1 + num_blocks,
@@ -59,9 +59,5 @@ void CloverleafCudaChunk::field_summary_kernel
     *press = thrust::reduce(reduce_ptr_5,
                             reduce_ptr_5 + num_blocks,
                             0.0);
-
-    *temp = thrust::reduce(reduce_ptr_6,
-                           reduce_ptr_6 + num_blocks,
-                           0.0);
 }
 

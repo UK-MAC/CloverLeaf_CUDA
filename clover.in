@@ -18,5 +18,6 @@
  end_step=87
  profiler_on
  use_cuda_kernels
+ cuda_device=0
 
 *endclover
