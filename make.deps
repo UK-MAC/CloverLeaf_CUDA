@@ -65,7 +65,7 @@ build_field.o: build_field.f90 clover_module.mod
 calc_dt.o calc_dt_module.mod: calc_dt.f90 clover_module.mod \
  calc_dt_kernel_module.mod
 calc_dt_kernel.o calc_dt_kernel_module.mod: calc_dt_kernel.f90
-clover_module.mod: data_module.mod definitions_module.mod clover.f90
+clover.o clover_module.mod: data_module.mod definitions_module.mod clover.f90
 clover_leaf.o: clover_leaf.f90 clover_module.mod
 data.o data_module.mod: data.f90
 definitions.o definitions_module.mod: definitions.f90 data_module.mod

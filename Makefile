@@ -92,12 +92,11 @@ CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP) $(I3E) $(C_OPTIONS) -c
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
 
-CXXFLAGS+=$(CFLAGS)
+NV_FLAGS+=-D MANUALLY_CHOOSE_GPU
 
 # requires CUDA_HOME to be set - not the same on all machines
-NV_FLAGS=-I$(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -restrict -Xcompiler "$(CFLAGS_GNU)" -D MPI_HDR
+NV_FLAGS=-I$(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -restrict -Xcompiler "$(CFLAGS_GNU)" -D MPI_HDR $(NV_OPTIONS)
 NV_FLAGS+=-D NO_ERR_CHK
-NV_FLAGS+=-D MANUALLY_CHOOSE_GPU
 
 ifdef DEBUG
 NV_FLAGS+=-O0 -g -G
