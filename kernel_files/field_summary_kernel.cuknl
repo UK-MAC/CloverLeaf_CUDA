@@ -1,0 +1,77 @@
+
+__global__ void device_field_summary_kernel_cuda
+(int x_min, int x_max, int y_min, int y_max,
+const double* __restrict const volume,
+const double* __restrict const density0,
+const double* __restrict const energy0,
+const double* __restrict const pressure,
+const double* __restrict const xvel0,
+const double* __restrict const yvel0,
+      double* __restrict const vol,
+      double* __restrict const mass,
+      double* __restrict const ie,
+      double* __restrict const ke,
+      double* __restrict const press)
+{
+    __kernel_indexes;
+
+    __shared__ double vol_shared[BLOCK_SZ];
+    __shared__ double mass_shared[BLOCK_SZ];
+    __shared__ double ie_shared[BLOCK_SZ];
+    __shared__ double ke_shared[BLOCK_SZ];
+    __shared__ double press_shared[BLOCK_SZ];
+    vol_shared[lid] = 0.0;
+    mass_shared[lid] = 0.0;
+    ie_shared[lid] = 0.0;
+    ke_shared[lid] = 0.0;
+    press_shared[lid] = 0.0;
+
+    if (row >= (y_min + 1) && row <= (y_max + 1)
+    && column >= (x_min + 1) && column <= (x_max + 1))
+    {
+        double vsqrd = 0.0;
+
+        // unrolled do loop
+        vsqrd += 0.25 * (xvel0[THARR2D(0, 0, 1)] * xvel0[THARR2D(0, 0, 1)]
+                        +yvel0[THARR2D(0, 0, 1)] * yvel0[THARR2D(0, 0, 1)]);
+
+        vsqrd += 0.25 * (xvel0[THARR2D(1, 0, 1)] * xvel0[THARR2D(1, 0, 1)]
+                        +yvel0[THARR2D(1, 0, 1)] * yvel0[THARR2D(1, 0, 1)]);
+
+        vsqrd += 0.25 * (xvel0[THARR2D(0, 1, 1)] * xvel0[THARR2D(0, 1, 1)]
+                        +yvel0[THARR2D(0, 1, 1)] * yvel0[THARR2D(0, 1, 1)]);
+
+        vsqrd += 0.25 * (xvel0[THARR2D(1, 1, 1)] * xvel0[THARR2D(1, 1, 1)]
+                        +yvel0[THARR2D(1, 1, 1)] * yvel0[THARR2D(1, 1, 1)]);
+
+        double cell_vol = volume[THARR2D(0, 0, 0)];
+        double cell_mass = cell_vol * density0[THARR2D(0, 0, 0)];
+
+        vol_shared[lid] = cell_vol;
+        mass_shared[lid] = cell_mass;
+        ie_shared[lid] = cell_mass * energy0[THARR2D(0, 0, 0)];
+        ke_shared[lid] = cell_mass * 0.5 * vsqrd;
+        press_shared[lid] = cell_vol * pressure[THARR2D(0, 0, 0)];
+    }
+
+    __syncthreads();
+    for (int offset = BLOCK_SZ / 2; offset > 0; offset /= 2)
+    {
+        if (lid < offset)
+        {
+            vol_shared[lid] += vol_shared[lid + offset];
+            mass_shared[lid] += mass_shared[lid + offset];
+            ie_shared[lid] += ie_shared[lid + offset];
+            ke_shared[lid] += ke_shared[lid + offset];
+            press_shared[lid] += press_shared[lid + offset];
+        }
+        __syncthreads();
+    }
+
+    vol[blockIdx.x] = vol_shared[0];
+    mass[blockIdx.x] = mass_shared[0];
+    ie[blockIdx.x] = ie_shared[0];
+    ke[blockIdx.x] = ke_shared[0];
+    press[blockIdx.x] = press_shared[0];
+}
+

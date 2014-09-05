@@ -1,0 +1,132 @@
+
+__global__ void device_generate_chunk_kernel_cuda
+(int x_min, int x_max, int y_min, int y_max,
+const double* __restrict const vertexx,
+const double* __restrict const vertexy,
+const double* __restrict const cellx,
+const double* __restrict const celly,
+      double* __restrict const density0,
+      double* __restrict const energy0,
+      double* __restrict const xvel0,
+      double* __restrict const yvel0,
+
+const double* __restrict const state_density,
+const double* __restrict const state_energy,
+const double* __restrict const state_xvel,
+const double* __restrict const state_yvel,
+const double* __restrict const state_xmin,
+const double* __restrict const state_xmax,
+const double* __restrict const state_ymin,
+const double* __restrict const state_ymax,
+const double* __restrict const state_radius,
+const int   * __restrict const state_geometry,
+const int g_rect,
+const int g_circ,
+const int g_point,
+const int state)
+{
+    __kernel_indexes;
+
+    if (row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
+    {
+        const double x_cent = state_xmin[state];
+        const double y_cent = state_ymin[state];
+
+        if (g_rect == state_geometry[state])
+        {
+            if (vertexx[1 + column] >= state_xmin[state]
+            && vertexx[column] <  state_xmax[state]
+            && vertexy[1 + row]    >= state_ymin[state]
+            && vertexy[row]    <  state_ymax[state])
+            {
+                energy0[THARR2D(0, 0, 0)] = state_energy[state];
+                density0[THARR2D(0, 0, 0)] = state_density[state];
+
+                //unrolled do loop
+                xvel0[THARR2D(0, 0, 1)] = state_xvel[state];
+                yvel0[THARR2D(0, 0, 1)] = state_yvel[state];
+
+                xvel0[THARR2D(1, 0, 1)] = state_xvel[state];
+                yvel0[THARR2D(1, 0, 1)] = state_yvel[state];
+
+                xvel0[THARR2D(0, 1, 1)] = state_xvel[state];
+                yvel0[THARR2D(0, 1, 1)] = state_yvel[state];
+
+                xvel0[THARR2D(1, 1, 1)] = state_xvel[state];
+                yvel0[THARR2D(1, 1, 1)] = state_yvel[state];
+            }
+        }
+        else if (state_geometry[state] == g_circ)
+        {
+            double x_pos = cellx[column]-x_cent;
+            double y_pos = celly[row]-y_cent;
+            double radius = sqrt(x_pos*x_pos + y_pos*y_pos);
+
+            if (radius <= state_radius[state])
+            {
+                energy0[THARR2D(0, 0, 0)] = state_energy[state];
+                density0[THARR2D(0, 0, 0)] = state_density[state];
+
+                //unrolled do loop
+                xvel0[THARR2D(0, 0, 1)] = state_xvel[state];
+                yvel0[THARR2D(0, 0, 1)] = state_yvel[state];
+
+                xvel0[THARR2D(1, 0, 1)] = state_xvel[state];
+                yvel0[THARR2D(1, 0, 1)] = state_yvel[state];
+
+                xvel0[THARR2D(0, 1, 1)] = state_xvel[state];
+                yvel0[THARR2D(0, 1, 1)] = state_yvel[state];
+
+                xvel0[THARR2D(1, 1, 1)] = state_xvel[state];
+                yvel0[THARR2D(1, 1, 1)] = state_yvel[state];
+            }
+        }
+        else if (state_geometry[state] == g_point)
+        {
+            if (vertexx[column] == x_cent && vertexy[row] == y_cent)
+            {
+                energy0[THARR2D(0, 0, 0)] = state_energy[state];
+                density0[THARR2D(0, 0, 0)] = state_density[state];
+
+                //unrolled do loop
+                xvel0[THARR2D(0, 0, 1)] = state_xvel[state];
+                yvel0[THARR2D(0, 0, 1)] = state_yvel[state];
+
+                xvel0[THARR2D(1, 0, 1)] = state_xvel[state];
+                yvel0[THARR2D(1, 0, 1)] = state_yvel[state];
+
+                xvel0[THARR2D(0, 1, 1)] = state_xvel[state];
+                yvel0[THARR2D(0, 1, 1)] = state_yvel[state];
+
+                xvel0[THARR2D(1, 1, 1)] = state_xvel[state];
+                yvel0[THARR2D(1, 1, 1)] = state_yvel[state];
+            }
+        }
+
+    }
+}
+
+__global__ void device_generate_chunk_kernel_init_cuda
+(int x_min, int x_max, int y_min, int y_max,
+      double* density0,
+      double* energy0,
+      double* xvel0,
+      double* yvel0,
+const double* state_density,
+const double* state_energy,
+const double* state_xvel,
+const double* state_yvel)
+{
+    __kernel_indexes;
+
+    if (row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
+    {
+        energy0[THARR2D(0, 0, 0)] = state_energy[0];
+        density0[THARR2D(0, 0, 0)] = state_density[0];
+        xvel0[THARR2D(0, 0, 1)] = state_xvel[0];
+        yvel0[THARR2D(0, 0, 1)] = state_yvel[0];
+    }
+}
+

@@ -1,0 +1,343 @@
+/*Crown Copyright 2012 AWE.
+ *
+ * This file is part of CloverLeaf.
+ *
+ * CloverLeaf is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * CloverLeaf is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * CloverLeaf. If not, see http://www.gnu.org/licenses/.
+ */
+
+/*
+ *  @brief CUDA cell advection kernel
+ *  @author Michael Boulton NVIDIA COORP
+ *  @details Performs a second order advective remap using van-Leer limiting
+ *  with directional splitting.
+ */         
+
+#define _SHARED_KERNEL_ARGS_                    \
+    const int x_min,                            \
+    const int x_max,                            \
+    const int y_min,                            \
+    const int y_max,                            \
+    const int swp_nmbr,                         \
+    const double* __restrict const volume,      \
+    const double* __restrict const vol_flux_x,  \
+    const double* __restrict const vol_flux_y,  \
+    const double* __restrict const pre_vol,     \
+          double* __restrict const density1,    \
+          double* __restrict const energy1,     \
+          double* __restrict const ener_flux
+
+__global__ void device_pre_vol_kernel_x
+(const int x_min, const int x_max,
+const int y_min, const int y_max,
+const int swp_nmbr,
+      double* __restrict const pre_vol,
+      double* __restrict const post_vol,
+const double* __restrict const volume,
+const double* __restrict const vol_flux_x,
+const double* __restrict const vol_flux_y)
+{
+    __kernel_indexes;
+
+    if (row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
+    {
+        if (swp_nmbr == 1)
+        {
+            pre_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
+                +(vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)]
+                + vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)]);
+            post_vol[THARR2D(0, 0, 1)] = pre_vol[THARR2D(0, 0, 1)]
+                - (vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)]);
+        }
+        else
+        {
+            pre_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
+                + vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)];
+            post_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)];
+        }
+    }
+}
+
+__global__ void device_ener_flux_kernel_x
+(_SHARED_KERNEL_ARGS_,
+const double* __restrict const vertexdx,
+      double* __restrict const mass_flux_x)
+{
+    __kernel_indexes;
+
+    double sigmat, sigmam, sigma3, sigma4, diffuw, diffdw, limiter;
+    int upwind, donor, downwind, dif;
+    const double one_by_six = 1.0/6.0;
+
+    //
+    //  if cell is within x area:
+    //  +++++++++++++++++++++
+    //  +++++++++++++++++++++
+    //  ++xxxxxxxxxxxxxxxxxxx
+    //  +++++++++++++++++++++
+    //  +++++++++++++++++++++
+    //
+    if (row >= (y_min + 1) && row <= (y_max + 1)
+    && column >= (x_min + 1) && column <= (x_max + 1) + 2)
+    {
+        // if flowing right
+        if (vol_flux_x[THARR2D(0, 0, 1)] > 0.0)
+        {
+            upwind = -2;
+            donor = -1;
+            downwind = 0;
+            dif = donor;
+        }
+        else
+        {
+            //  tries to get from below, unless it would be reading from a cell
+            //  which would be off the right, in which case read from cur cell
+            upwind = (column == (x_max + 1) + 2) ? 0 : 1;
+            donor = 0;
+            downwind = -1;
+            dif = upwind;
+        }
+
+        sigmat = fabs(vol_flux_x[THARR2D(0, 0, 1)]) / pre_vol[THARR2D(donor, 0, 1)];
+        sigma3 = (1.0 + sigmat) * (vertexdx[column] / vertexdx[column + dif]);
+        sigma4 = 2.0 - sigmat;
+
+        diffuw = density1[THARR2D(donor, 0, 0)] - density1[THARR2D(upwind, 0, 0)];
+        diffdw = density1[THARR2D(downwind, 0, 0)] - density1[THARR2D(donor, 0, 0)];
+
+        if (diffuw * diffdw > 0.0)
+        {
+            limiter = (1.0 - sigmat) * SIGN(1.0, diffdw)
+                * MIN(fabs(diffuw), MIN(fabs(diffdw), one_by_six
+                * (sigma3 * fabs(diffuw) + sigma4 * fabs(diffdw))));
+        }
+        else
+        {
+            limiter = 0.0;
+        }
+
+        mass_flux_x[THARR2D(0, 0, 1)] = vol_flux_x[THARR2D(0, 0, 1)]
+            * (density1[THARR2D(donor, 0, 0)] + limiter);
+
+        sigmam = fabs(mass_flux_x[THARR2D(0, 0, 1)])
+            / (density1[THARR2D(donor, 0, 0)] * pre_vol[THARR2D(donor, 0, 1)]);
+        diffuw = energy1[THARR2D(donor, 0, 0)] - energy1[THARR2D(upwind, 0, 0)];
+        diffdw = energy1[THARR2D(downwind, 0, 0)] - energy1[THARR2D(donor, 0, 0)];
+
+        if (diffuw * diffdw > 0.0)
+        {
+            limiter = (1.0 - sigmam) * SIGN(1.0, diffdw)
+                * MIN(fabs(diffuw), MIN(fabs(diffdw), one_by_six
+                * (sigma3 * fabs(diffuw) + sigma4 * fabs(diffdw))));
+        }
+        else
+        {
+            limiter = 0.0;
+        }
+
+        ener_flux[THARR2D(0, 0, 0)] = mass_flux_x[THARR2D(0, 0, 1)]
+            * (energy1[THARR2D(donor, 0, 0)] + limiter);
+    }
+}
+
+__global__ void device_advec_cell_kernel_x
+(_SHARED_KERNEL_ARGS_,
+const double* __restrict const mass_flux_x)
+{
+    __kernel_indexes;
+
+    double pre_mass, post_mass, advec_vol, post_ener;
+
+    //
+    //  if cell is within x area:
+    //  +++++++++++++++++++++
+    //  +++++++++++++++++++++
+    //  ++xxxxxxxxxxxxxxxxx++
+    //  +++++++++++++++++++++
+    //  +++++++++++++++++++++
+    //
+    if (row >= (y_min + 1) && row <= (y_max + 1)
+    && column >= (x_min + 1) && column <= (x_max + 1))
+    {
+        pre_mass = density1[THARR2D(0, 0, 0)] * pre_vol[THARR2D(0, 0, 1)];
+
+        post_mass = pre_mass + mass_flux_x[THARR2D(0, 0, 1)]
+            - mass_flux_x[THARR2D(1, 0, 1)];
+
+        post_ener = (energy1[THARR2D(0, 0, 0)] * pre_mass
+            + ener_flux[THARR2D(0, 0, 0)] - ener_flux[THARR2D(1, 0, 0)])
+            / post_mass;
+
+        advec_vol = pre_vol[THARR2D(0, 0, 1)] + vol_flux_x[THARR2D(0, 0, 1)]
+            - vol_flux_x[THARR2D(1, 0, 1)];
+
+        density1[THARR2D(0, 0, 0)] = post_mass / advec_vol;
+        energy1[THARR2D(0, 0, 0)] = post_ener;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+//y kernels
+
+__global__ void device_pre_vol_kernel_y
+(const int x_min, const int x_max,
+const int y_min, const int y_max,
+const int swp_nmbr,
+      double* __restrict const pre_vol,
+      double* __restrict const post_vol,
+const double* __restrict const volume,
+const double* __restrict const vol_flux_x,
+const double* __restrict const vol_flux_y)
+{
+    __kernel_indexes;
+
+    if (row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
+    {
+        if (swp_nmbr == 1)
+        {
+            pre_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
+                +(vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)]
+                + vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)]);
+            post_vol[THARR2D(0, 0, 1)] = pre_vol[THARR2D(0, 0, 1)]
+                - (vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 1)]);
+        }
+        else
+        {
+            pre_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
+                + vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)];
+            post_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)];
+        }
+    }
+}
+
+__global__ void device_ener_flux_kernel_y
+(_SHARED_KERNEL_ARGS_,
+const double* __restrict const vertexdy,
+      double* __restrict const mass_flux_y)
+{
+    __kernel_indexes;
+
+    double sigmat, sigmam, sigma3, sigma4, diffuw, diffdw, limiter;
+    int upwind, donor, downwind, dif;
+    const double one_by_six = 1.0/6.0;
+
+    //
+    //  if cell is within x area:
+    //  +++++++++++++++++++++
+    //  +++++++++++++++++++++
+    //  ++xxxxxxxxxxxxxxxxx++
+    //  ++xxxxxxxxxxxxxxxxx++
+    //
+    if (row >= (y_min + 1) && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) && column <= (x_max + 1))
+    {
+        // if flowing right
+        if (vol_flux_y[THARR2D(0, 0, 0)] > 0.0)
+        {
+            upwind = -2;
+            donor = -1;
+            downwind = 0;
+            dif = donor;
+        }
+        else
+        {
+            //
+            //  tries to get from below, unless it would be reading from a cell
+            //  which would be off the bottom, in which case read from cur cell
+            //
+            upwind = (row == (y_max + 1) + 2) ? 0 : 1;
+            donor = 0;
+            downwind = -1;
+            dif = downwind;
+        }
+
+        sigmat = fabs(vol_flux_y[THARR2D(0, 0, 0)]) / pre_vol[THARR2D(0, donor, 1)];
+        sigma3 = (1.0 + sigmat) * (vertexdy[row] / vertexdy[row + dif]);
+        sigma4 = 2.0 - sigmat;
+
+        diffuw = density1[THARR2D(0, donor, 0)] - density1[THARR2D(0, upwind, 0)];
+        diffdw = density1[THARR2D(0, downwind, 0)] - density1[THARR2D(0, donor, 0)];
+
+        if (diffuw * diffdw > 0.0)
+        {
+            limiter = (1.0 - sigmat) * SIGN(1.0, diffdw)
+                * MIN(fabs(diffuw), MIN(fabs(diffdw), one_by_six
+                * (sigma3 * fabs(diffuw) + sigma4 * fabs(diffdw))));
+        }
+        else
+        {
+            limiter = 0.0;
+        }
+
+        mass_flux_y[THARR2D(0, 0, 0)] = vol_flux_y[THARR2D(0, 0, 0)]
+            * (density1[THARR2D(0, donor, 0)] + limiter);
+
+        sigmam = fabs(mass_flux_y[THARR2D(0, 0, 0)])
+            / (density1[THARR2D(0, donor, 0)] * pre_vol[THARR2D(0, donor, 1)]);
+        diffuw = energy1[THARR2D(0, donor, 0)] - energy1[THARR2D(0, upwind, 0)];
+        diffdw = energy1[THARR2D(0, downwind, 0)] - energy1[THARR2D(0, donor, 0)];
+
+        if (diffuw * diffdw > 0.0)
+        {
+            limiter = (1.0 - sigmam) * SIGN(1.0, diffdw)
+                * MIN(fabs(diffuw), MIN(fabs(diffdw), one_by_six
+                * (sigma3 * fabs(diffuw) + sigma4 * fabs(diffdw))));
+        }
+        else
+        {
+            limiter = 0.0;
+        }
+
+        ener_flux[THARR2D(0, 0, 0)] = mass_flux_y[THARR2D(0, 0, 0)]
+            * (energy1[THARR2D(0, donor, 0)] + limiter);
+    }
+}
+
+__global__ void device_advec_cell_kernel_y
+(_SHARED_KERNEL_ARGS_,
+const double* __restrict const mass_flux_y)
+{
+    __kernel_indexes;
+
+    double pre_mass, post_mass, advec_vol, post_ener;
+
+    //
+    //  if cell is within x area:
+    //  +++++++++++++++++++++
+    //  +++++++++++++++++++++
+    //  ++xxxxxxxxxxxxxxxxx++
+    //  +++++++++++++++++++++
+    //  +++++++++++++++++++++
+    //
+    if (row >= (y_min + 1) && row <= (y_max + 1)
+    && column >= (x_min + 1) && column <= (x_max + 1))
+    {
+        pre_mass = density1[THARR2D(0, 0, 0)] * pre_vol[THARR2D(0, 0, 1)];
+
+        post_mass = pre_mass + mass_flux_y[THARR2D(0, 0, 0)]
+            - mass_flux_y[THARR2D(0, 1, 0)];
+
+        post_ener = (energy1[THARR2D(0, 0, 0)] * pre_mass
+            + ener_flux[THARR2D(0, 0, 0)] - ener_flux[THARR2D(0, 1, 0)])
+            / post_mass;
+
+        advec_vol = pre_vol[THARR2D(0, 0, 1)] + vol_flux_y[THARR2D(0, 0, 0)]
+            - vol_flux_y[THARR2D(0, 1, 0)];
+
+        density1[THARR2D(0, 0, 0)] = post_mass / advec_vol;
+        energy1[THARR2D(0, 0, 0)] = post_ener;
+    }
+}
+

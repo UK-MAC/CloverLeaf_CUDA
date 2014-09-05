@@ -1,0 +1,110 @@
+
+__global__ void device_update_halo_kernel_bottom_cuda
+(int x_min, int x_max, int y_min, int y_max,
+cell_info_t grid_type,
+double* cur_array,
+int depth)
+{
+    int x_extra = grid_type.x_extra;
+    int y_invert = grid_type.y_invert;
+    __kernel_indexes;
+
+    // offset by 1 if it is anything but a CELL grid
+    int b_offset = (grid_type.grid_type != CELL_DATA) ? 1 : 0;
+
+    if (column >= 2 - depth && column <= (x_max + 1) + x_extra + depth)
+    {
+        if (row < depth)
+        {
+            const int offset = 2 + b_offset;
+
+            /*
+             * 1 - 2 * row means that row 0 services row 1, and vice versa
+             * this means that it can be dispatched with 'depth' rows only
+             */
+            cur_array[THARR2D(0, 1 - (2 * row), x_extra)] =
+                y_invert * cur_array[THARR2D(0, offset, x_extra)];
+        }
+    }
+}
+
+__global__ void device_update_halo_kernel_top_cuda
+(int x_min, int x_max, int y_min, int y_max,
+cell_info_t grid_type,
+double* cur_array,
+int depth)
+{
+    int x_extra = grid_type.x_extra;
+    int y_extra = grid_type.y_extra;
+    int y_invert = grid_type.y_invert;
+    int x_face = grid_type.x_face;
+    __kernel_indexes;
+
+    // if x face data, offset source/dest by - 1
+    int x_f_offset = (x_face) ? 1 : 0;
+
+    if (column >= 2 - depth && column <= (x_max + 1) + x_extra + depth)
+    {
+        if (row < depth)
+        {
+            const int offset = (- row) * 2 - 1 - x_f_offset;
+
+            cur_array[THARR2D(0, y_extra + y_max + 2, x_extra)] =
+                y_invert * cur_array[THARR2D(0, y_max + 2 + offset, x_extra)];
+        }
+    }
+}
+
+__global__ void device_update_halo_kernel_left_cuda
+(int x_min, int x_max, int y_min, int y_max,
+cell_info_t grid_type,
+double* cur_array,
+int depth)
+{
+    int x_extra = grid_type.x_extra;
+    int y_extra = grid_type.y_extra;
+    int x_invert = grid_type.x_invert;
+
+    // offset by 1 if it is anything but a CELL grid
+    int l_offset = (grid_type.grid_type != CELL_DATA) ? 1 : 0;
+
+    // special indexes for specific depth
+    const int glob_id = threadIdx.x + blockIdx.x * blockDim.x;
+    const int row = glob_id / depth;
+    const int column = glob_id % depth;
+
+    if (row >= 2 - depth && row <= (y_max + 1) + y_extra + depth)
+    {
+        // first in row
+        const int offset = row * (x_max + 4 + x_extra);
+
+        cur_array[offset + (1 - column)] = x_invert * cur_array[offset + 2 + column + l_offset];
+    }
+}
+
+__global__ void device_update_halo_kernel_right_cuda
+(int x_min, int x_max, int y_min, int y_max,
+cell_info_t grid_type,
+double* cur_array,
+int depth)
+{
+    int x_extra = grid_type.x_extra;
+    int y_extra = grid_type.y_extra;
+    int x_invert = grid_type.x_invert;
+    int y_face = grid_type.y_face;
+
+    // offset source by -1 if its a y face
+    int y_f_offset = (y_face) ? 1 : 0;
+
+    const int glob_id = threadIdx.x + blockIdx.x * blockDim.x;
+    const int row = glob_id / depth;
+    const int column = glob_id % depth;
+
+    if (row >= 2 - depth && row <= (y_max + 1) + y_extra + depth)
+    {
+        const int offset = row * (x_max + 4 + x_extra);
+
+        cur_array[offset + x_max + 2 + x_extra + column] = x_invert * cur_array[offset + x_max + 1 - (column + y_f_offset)];
+    }
+}
+

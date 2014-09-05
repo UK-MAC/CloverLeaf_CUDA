@@ -1,0 +1,312 @@
+/*Crown Copyright 2012 AWE.
+ *
+ * This file is part of CloverLeaf.
+ *
+ * CloverLeaf is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * CloverLeaf is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * CloverLeaf. If not, see http://www.gnu.org/licenses/.
+ */
+
+/*
+ *  @brief CUDA momentum advection kernel
+ *  @author Michael Boulton
+ *  @details Performs a second order advective remap on the vertex momentum
+ *  using van-Leer limiting and directional splitting.
+ *  Note that although pre_vol is only set and not used in the update, please
+ *  leave it in the method.
+ */
+
+__global__ void device_advec_mom_vol_kernel_cuda
+(int x_min,int x_max,int y_min,int y_max, int mom_sweep,
+      double* __restrict const post_vol,
+      double* __restrict const pre_vol,
+const double* __restrict const volume,
+const double* __restrict const vol_flux_x,
+const double* __restrict const vol_flux_y)
+{
+    __kernel_indexes;
+
+    if (row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
+    {
+        if (mom_sweep == 1)
+        {
+            post_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
+                + vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)];
+            pre_vol[THARR2D(0, 0, 1)] = post_vol[THARR2D(0, 0, 1)]
+                + vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)];
+        }
+        else if (mom_sweep == 2)
+        {
+            post_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)]
+                + vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)];
+            pre_vol[THARR2D(0, 0, 1)] = post_vol[THARR2D(0, 0, 1)]
+                + vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)];
+        }
+        else if (mom_sweep == 3)
+        {
+            post_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)];
+            pre_vol[THARR2D(0, 0, 1)] = post_vol[THARR2D(0, 0, 1)]
+                + vol_flux_y[THARR2D(0, 1, 0)] - vol_flux_y[THARR2D(0, 0, 0)];
+        }
+        else if (mom_sweep == 4)
+        {
+            post_vol[THARR2D(0, 0, 1)] = volume[THARR2D(0, 0, 0)];
+            pre_vol[THARR2D(0, 0, 1)] = post_vol[THARR2D(0, 0, 1)]
+                + vol_flux_x[THARR2D(1, 0, 1)] - vol_flux_x[THARR2D(0, 0, 1)];
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////
+//x kernels
+
+__global__ void device_advec_mom_node_flux_post_x_kernel_cuda
+(int x_min,int x_max,int y_min,int y_max,
+      double* __restrict const node_flux,
+      double* __restrict const node_mass_post,
+const double* __restrict const mass_flux_x,
+const double* __restrict const post_vol,
+const double* __restrict const density1)
+{
+    __kernel_indexes;
+
+    if (row >= (y_min + 1) && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) - 2 && column <= (x_max + 1) + 2)
+    {
+        node_flux[THARR2D(0, 0, 1)] = 0.25
+            * (mass_flux_x[THARR2D(0, -1, 1)] + mass_flux_x[THARR2D(0, 0, 1)]
+            + mass_flux_x[THARR2D(1, -1, 1)] + mass_flux_x[THARR2D(1, 0, 1)]);
+
+    }
+
+    if (row >= (y_min + 1) && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) - 1 && column <= (x_max + 1) + 2)
+    {
+            node_mass_post[THARR2D(0, 0, 1)] = 0.25
+                *(density1[THARR2D(0, -1, 0)]  * post_vol[THARR2D(0, -1, 1)]
+                + density1[THARR2D(0, 0, 0)]   * post_vol[THARR2D(0, 0, 1)]
+                + density1[THARR2D(-1, -1, 0)] * post_vol[THARR2D(-1, -1, 1)]
+                + density1[THARR2D(-1, 0, 0)]  * post_vol[THARR2D(-1, 0, 1)]);
+    }
+}
+
+__global__ void device_advec_mom_node_pre_x_kernel_cuda
+(int x_min,int x_max,int y_min,int y_max,
+const double* __restrict const node_flux,
+const double* __restrict const node_mass_post,
+      double* __restrict const node_mass_pre)
+{
+    __kernel_indexes;
+
+    if (row >= (y_min + 1) && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) - 1 && column <= (x_max + 1) + 2)
+    {
+        node_mass_pre[THARR2D(0, 0, 1)] = node_mass_post[THARR2D(0, 0, 1)]
+            - node_flux[THARR2D(-1, 0, 1)] + node_flux[THARR2D(0, 0, 1)];
+    }
+}
+
+__global__ void device_advec_mom_flux_x_kernel_cuda
+(int x_min,int x_max,int y_min,int y_max,
+const double* __restrict const node_flux,
+const double* __restrict const node_mass_post,
+const double* __restrict const node_mass_pre,
+const double* __restrict const xvel1,
+const double* __restrict const celldx,
+      double* __restrict const mom_flux)
+{
+    __kernel_indexes;
+
+    int upwind, donor, downwind, dif;
+    double advec_vel;
+    double sigma, width, vdiffuw, vdiffdw, limiter;
+    double auw, adw, wind;
+
+    if (row >= (y_min + 1) && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) - 1 && column <= (x_max + 1) + 1)
+    {
+        if (node_flux[THARR2D(0, 0, 1)] < 0.0)
+        {
+            upwind = 2;
+            donor = 1;
+            downwind = 0;
+            dif = donor;
+        }
+        else
+        {
+            upwind = -1;
+            donor = 0;
+            downwind = 1;
+            dif = upwind;
+        }
+
+        sigma = fabs(node_flux[THARR2D(0, 0, 1)]) / node_mass_pre[THARR2D(donor, 0, 1)];
+        vdiffuw = xvel1[THARR2D(donor, 0, 1)] - xvel1[THARR2D(upwind, 0, 1)];
+        vdiffdw = xvel1[THARR2D(downwind, 0, 1)] - xvel1[THARR2D(donor, 0, 1)];
+        limiter = 0.0;
+
+        if (vdiffdw * vdiffuw > 0.0)
+        {
+            auw = fabs(vdiffuw);
+            adw = fabs(vdiffdw);
+            wind = (vdiffdw <= 0.0) ? -1.0 : 1.0;
+            width = celldx[column];
+            limiter = wind * MIN(width * ((2.0 - sigma) * adw / width 
+                + (1.0 + sigma) * auw / celldx[column + dif]) / 6.0, 
+                MIN(auw, adw));
+        }
+
+        advec_vel = xvel1[THARR2D(donor, 0, 1)] + (1.0 - sigma) * limiter;
+        mom_flux[THARR2D(0, 0, 1)] = advec_vel * node_flux[THARR2D(0, 0, 1)];
+    }
+}
+
+__global__ void device_advec_mom_xvel_kernel_cuda
+(int x_min,int x_max,int y_min,int y_max,
+const double* __restrict const node_mass_post,
+const double* __restrict const node_mass_pre,
+const double* __restrict const mom_flux,
+      double* __restrict const xvel1)
+{
+    __kernel_indexes;
+
+    if (row >= (y_min + 1) && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) && column <= (x_max + 1) + 1)
+    {
+        xvel1[THARR2D(0, 0, 1)] = (xvel1[THARR2D(0, 0, 1)]
+            * node_mass_pre[THARR2D(0, 0, 1)] + mom_flux[THARR2D(-1, 0, 1)]
+            - mom_flux[THARR2D(0, 0, 1)]) / node_mass_post[THARR2D(0, 0, 1)];
+    }
+}
+
+////////////////////////////////////////////////////////////
+//y kernels
+
+__global__ void device_advec_mom_node_flux_post_y_kernel_cuda
+(int x_min,int x_max,int y_min,int y_max,
+      double* __restrict const node_flux,
+      double* __restrict const node_mass_post,
+const double* __restrict const mass_flux_y,
+const double* __restrict const post_vol,
+const double* __restrict const density1)
+{
+    __kernel_indexes;
+
+    if (row >= (y_min + 1) - 2 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) && column <= (x_max + 1) + 1)
+    {
+        node_flux[THARR2D(0, 0, 1)] = 0.25
+            * (mass_flux_y[THARR2D(-1, 0, 0)] + mass_flux_y[THARR2D(0, 0, 0)]
+            + mass_flux_y[THARR2D(-1, 1, 0)] + mass_flux_y[THARR2D(0, 1, 0)]);
+    }
+
+    if (row >= (y_min + 1) - 1 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) && column <= (x_max + 1) + 1)
+    {
+        node_mass_post[THARR2D(0, 0, 1)] = 0.25
+            * (density1[THARR2D(0, -1, 0)] * post_vol[THARR2D(0, -1, 1)]
+            + density1[THARR2D(0, 0, 0)]   * post_vol[THARR2D(0, 0, 1)]
+            + density1[THARR2D(-1, -1, 0)] * post_vol[THARR2D(-1, -1, 1)]
+            + density1[THARR2D(-1, 0, 0)]  * post_vol[THARR2D(-1, 0, 1)]);
+    }
+}
+
+__global__ void device_advec_mom_node_pre_y_kernel_cuda
+(int x_min,int x_max,int y_min,int y_max,
+const double* __restrict const node_flux,
+const double* __restrict const node_mass_post,
+      double* __restrict const node_mass_pre)
+{
+    __kernel_indexes;
+
+    if (row >= (y_min + 1) - 1 && row <= (y_max + 1) + 2
+    && column >= (x_min + 1) && column <= (x_max + 1) + 1)
+    {
+        node_mass_pre[THARR2D(0, 0, 1)] = node_mass_post[THARR2D(0, 0, 1)]
+            - node_flux[THARR2D(0, -1, 1)] + node_flux[THARR2D(0, 0, 1)];
+    }
+}
+
+__global__ void device_advec_mom_flux_y_kernel_cuda
+(int x_min,int x_max,int y_min,int y_max,
+const double* __restrict const node_flux,
+const double* __restrict const node_mass_post,
+const double* __restrict const node_mass_pre,
+const double* __restrict const yvel1,
+const double* __restrict const celldy,
+      double* __restrict const mom_flux)
+{
+    __kernel_indexes;
+
+    int upwind, donor, downwind, dif;
+    double advec_vel;
+    double sigma, width, vdiffuw, vdiffdw, limiter;
+    double auw, adw, wind;
+
+    if (row >= (y_min + 1) - 1 && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) && column <= (x_max + 1) + 1)
+    {
+        if (node_flux[THARR2D(0, 0, 1)] < 0.0)
+        {
+            upwind = 2;
+            donor = 1;
+            downwind = 0;
+            dif = donor;
+        }
+        else
+        {
+            upwind = -1;
+            donor = 0;
+            downwind = 1;
+            dif = upwind;
+        }
+
+        sigma = fabs(node_flux[THARR2D(0, 0, 1)]) / node_mass_pre[THARR2D(0, donor, 1)];
+        vdiffuw = yvel1[THARR2D(0, donor, 1)] - yvel1[THARR2D(0, upwind, 1)];
+        vdiffdw = yvel1[THARR2D(0, downwind, 1)] - yvel1[THARR2D(0, donor, 1)];
+        limiter = 0.0;
+
+        if (vdiffdw * vdiffuw > 0.0)
+        {
+            auw = fabs(vdiffuw);
+            adw = fabs(vdiffdw);
+            wind = (vdiffdw <= 0.0) ? -1.0 : 1.0;
+            width = celldy[row];
+            limiter = wind * MIN(width * ((2.0 - sigma) * adw / width 
+                + (1.0 + sigma) * auw / celldy[row + dif]) / 6.0, 
+                MIN(auw, adw));
+        }
+
+        advec_vel = yvel1[THARR2D(0, donor, 1)] + (1.0 - sigma) * limiter;
+        mom_flux[THARR2D(0, 0, 1)] = advec_vel * node_flux[THARR2D(0, 0, 1)];
+    }
+}
+
+__global__ void device_advec_mom_yvel_kernel_cuda
+(int x_min,int x_max,int y_min,int y_max,
+const double* __restrict const node_mass_post,
+const double* __restrict const node_mass_pre,
+const double* __restrict const mom_flux,
+      double* __restrict const yvel1)
+{
+    __kernel_indexes;
+
+    if (row >= (y_min + 1) && row <= (y_max + 1) + 1
+    && column >= (x_min + 1) && column <= (x_max + 1) + 1)
+    {
+        yvel1[THARR2D(0, 0, 1)] = (yvel1[THARR2D(0, 0, 1)]
+            * node_mass_pre[THARR2D(0, 0, 1)] + mom_flux[THARR2D(0, -1, 1)]
+            - mom_flux[THARR2D(0, 0, 1)]) / node_mass_post[THARR2D(0, 0, 1)];
+    }
+}
+
