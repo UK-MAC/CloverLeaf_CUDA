@@ -123,8 +123,8 @@ C_FILES=\
 	advec_mom_kernel_c.o
 
 FORTRAN_FILES=\
-	clover.o \
 	pack_kernel.o \
+	clover.o \
 	data.o			\
 	definitions.o			\
 	report.o			\
