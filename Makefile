@@ -84,6 +84,9 @@ endif
 NV_ARCH=KEPLER
 CODE_GEN_FERMI=-gencode arch=compute_20,code=sm_21
 CODE_GEN_KEPLER=-gencode arch=compute_35,code=sm_35
+CODE_GEN_KEPLER_CONSUMER=-gencode arch=compute_30,code=sm_30
+CODE_GEN_MAXWELL=-gencode arch=compute_50,code=sm_50
+CODE_GEN_PASCAL=-gencode arch=compute_60,code=sm_60
 
 LDLIBS+=-lstdc++ -lcudart
 
@@ -97,6 +100,11 @@ NV_FLAGS+=-D MANUALLY_CHOOSE_GPU
 # requires CUDA_HOME to be set - not the same on all machines
 NV_FLAGS=-I$(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -restrict -Xcompiler "$(CFLAGS_GNU)" -D MPI_HDR $(NV_OPTIONS)
 NV_FLAGS+=-D NO_ERR_CHK
+libdir.x86_64 = lib64
+libdir.i686   = lib
+MACHINE := $(shell uname -m)
+libdir = $(libdir.$(MACHINE))
+LDFLAGS+=-L$(CUDA_HOME)/$(libdir)
 
 ifdef DEBUG
 NV_FLAGS+=-O0 -g -G
