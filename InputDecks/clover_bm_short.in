@@ -17,4 +17,5 @@
  end_step=87
  test_problem 2
 
+ use_cuda_kernels
 *endclover

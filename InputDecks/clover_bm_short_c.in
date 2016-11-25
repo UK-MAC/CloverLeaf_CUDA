@@ -18,4 +18,5 @@
  end_step=87
  use_c_kernels
 
+ use_cuda_kernels
 *endclover

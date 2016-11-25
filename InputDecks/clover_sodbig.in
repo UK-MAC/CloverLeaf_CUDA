@@ -16,4 +16,5 @@
  max_timestep=0.04
  end_time=30.0
 
+ use_cuda_kernels
 *endclover
