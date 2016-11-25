@@ -27,6 +27,7 @@
 
 #include "cuda_common.hpp"
 #include "kernel_files/PdV_kernel.cuknl"
+#include "host_reductions_kernel_cuda.hpp"
 
 extern "C" void pdv_kernel_cuda_
 (int *error_condition, int *prdct, double *dtbyt)
@@ -51,9 +52,7 @@ void CloverleafCudaChunk::PdV_kernel
             energy0, energy1, pressure, viscosity,
             xvel0, yvel0, xvel1, yvel1);
     }
-
-    *error_condition = *thrust::max_element(reduce_pdv,
-                                            reduce_pdv + num_blocks);
+    ReduceToHost<int>::max_element(pdv_reduce_array, error_condition, num_blocks);
 
     if (1 == *error_condition)
     {

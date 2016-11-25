@@ -26,6 +26,7 @@
 
 #include "cuda_common.hpp"
 #include "kernel_files/calc_dt_kernel.cuknl"
+#include "host_reductions_kernel_cuda.hpp"
 
 extern "C" void calc_dt_kernel_cuda_
 (double* g_small,
@@ -64,13 +65,10 @@ int* small)
         volume, density0, viscosity, soundspeed, xvel0, yvel0,
         reduce_buf_1, reduce_buf_2);
 
-    // reduce_ptr 2 is a thrust wrapper around work_array_2
-    *dt_min_val = *thrust::min_element(reduce_ptr_2,
-                                       reduce_ptr_2 + num_blocks);
+    ReduceToHost<double>::min_element(reduce_buf_2, dt_min_val, num_blocks);
 
-    // ditto on reduce ptr 1
-    double jk_control = *thrust::max_element(reduce_ptr_1,
-                                             reduce_ptr_1 + num_blocks);
+    double jk_control;
+    ReduceToHost<double>::max_element(reduce_buf_1, &jk_control, num_blocks);
 
     *dtl_control = 10.01 * (jk_control - static_cast<int>(jk_control));
 

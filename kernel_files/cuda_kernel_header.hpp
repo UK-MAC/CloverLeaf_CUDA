@@ -1,3 +1,5 @@
+#ifndef __CUDA_KERNEL_HEADER
+#define __CUDA_KERNEL_HEADER
 #include "../ftocmacros.h"
 
 // size of workgroup/block - 256 seems to be optimal
@@ -40,7 +42,12 @@
     const int row = glob_id / (x_max + 4);  \
     const int column = glob_id % (x_max + 4);
 
-__device__ inline double SUM(double a, double b){return a+b;}
+template < typename T >
+__device__ inline T SUM(T a, T b){return a+b;}
+template < typename T >
+__device__ inline T MAXIMUM(T a, T b){return a < b ? b : a;}
+template < typename T >
+__device__ inline T MINIMUM(T a, T b){return a < b ? a : b;}
 
 template < typename T, int offset >
 class Reduce
@@ -74,4 +81,5 @@ public:
         out[blockIdx.x] = array[0];
     }
 };
+#endif //__CUDA_KERNEL_HEADER
 
