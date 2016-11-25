@@ -14,8 +14,9 @@
  initial_timestep=0.04
  timestep_rise=1.5
  max_timestep=0.04
- end_time=0.55
- end_step=87
- test_problem 4
+ end_time=15.6
+ end_step=2955
+ test_problem 5
 
+ use_cuda_kernels
 *endclover
