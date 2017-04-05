@@ -84,6 +84,7 @@ endif
 NV_ARCH=KEPLER
 CODE_GEN_FERMI=-gencode arch=compute_20,code=sm_21
 CODE_GEN_KEPLER=-gencode arch=compute_35,code=sm_35
+CODE_GEN_PASCAL=-gencode arch=compute_61,code=sm_61
 
 LDLIBS+=-lstdc++ -lcudart
 
