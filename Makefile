@@ -86,7 +86,7 @@ CODE_GEN_FERMI=-gencode arch=compute_20,code=sm_21
 CODE_GEN_KEPLER=-gencode arch=compute_35,code=sm_35
 CODE_GEN_KEPLER_CONSUMER=-gencode arch=compute_30,code=sm_30
 CODE_GEN_MAXWELL=-gencode arch=compute_50,code=sm_50
-CODE_GEN_PASCAL=-gencode arch=compute_60,code=sm_60
+CODE_GEN_PASCAL=-gencode arch=compute_61,code=sm_61
 
 LDLIBS+=-lstdc++ -lcudart
 
