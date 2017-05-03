@@ -25,11 +25,12 @@
 #ifndef __CUDA_COMMON_INC
 #define __CUDA_COMMON_INC
 
-#include "thrust/device_allocator.h"
-#include "thrust/extrema.h"
-#include "kernel_files/cuda_kernel_header.hpp"
+#include <iostream>
+#include <string>
+#include <stdexcept>
 #include <map>
 #include <vector>
+#include "kernel_files/cuda_kernel_header.hpp"
 
 // used in update_halo and for copying back to host for mpi transfers
 #define FIELD_density0      1
@@ -182,18 +183,6 @@ private:
     double* vertexy;
     double* vertexdx;
     double* vertexdy;
-
-    // used in calc_dt to retrieve values
-    thrust::device_ptr< double > thr_cellx;
-    thrust::device_ptr< double > thr_celly;
-    thrust::device_ptr< double > thr_xvel0;
-    thrust::device_ptr< double > thr_yvel0;
-    thrust::device_ptr< double > thr_xvel1;
-    thrust::device_ptr< double > thr_yvel1;
-    thrust::device_ptr< double > thr_density0;
-    thrust::device_ptr< double > thr_energy0;
-    thrust::device_ptr< double > thr_pressure;
-    thrust::device_ptr< double > thr_soundspeed;
 
     // holding temporary stuff like post_vol etc.
     double* work_array_1;
