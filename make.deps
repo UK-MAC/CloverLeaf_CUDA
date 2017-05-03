@@ -10,7 +10,7 @@ advec_mom_kernel_cuda.o: advec_mom_kernel_cuda.cu cuda_common.hpp \
 calc_dt_kernel_cuda.o: calc_dt_kernel_cuda.cu cuda_common.hpp \
  kernel_files/cuda_kernel_header.hpp kernel_files/../ftocmacros.h \
  kernel_files/calc_dt_kernel.cuknl  host_reductions_kernel_cuda.hpp \
- kernel_files/reductions_kernel.cuknl
+ kernel_files/reductions_kernel.cuknl value_getter.hpp
 cuda_errors.o: cuda_errors.cu cuda_common.hpp \
  kernel_files/cuda_kernel_header.hpp kernel_files/../ftocmacros.h
 cuda_strings.o: cuda_strings.cu cuda_strings.hpp
