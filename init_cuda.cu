@@ -162,26 +162,7 @@ num_blocks((((*in_x_max)+5)*((*in_y_max)+5))/BLOCK_SZ)
     CUDA_ARRAY_ALLOC(reduce_buf_5, num_blocks*sizeof(double));
     CUDA_ARRAY_ALLOC(reduce_buf_6, num_blocks*sizeof(double));
 
-    reduce_ptr_1 = thrust::device_ptr< double >(reduce_buf_1);
-    reduce_ptr_2 = thrust::device_ptr< double >(reduce_buf_2);
-    reduce_ptr_3 = thrust::device_ptr< double >(reduce_buf_3);
-    reduce_ptr_4 = thrust::device_ptr< double >(reduce_buf_4);
-    reduce_ptr_5 = thrust::device_ptr< double >(reduce_buf_5);
-    reduce_ptr_6 = thrust::device_ptr< double >(reduce_buf_6);
-
     CUDA_ARRAY_ALLOC(pdv_reduce_array, num_blocks*sizeof(int));
-    reduce_pdv = thrust::device_ptr< int >(pdv_reduce_array);
-
-    thr_cellx = thrust::device_ptr< double >(cellx);
-    thr_celly = thrust::device_ptr< double >(celly);
-    thr_xvel0 = thrust::device_ptr< double >(xvel0);
-    thr_yvel0 = thrust::device_ptr< double >(yvel0);
-    thr_xvel1 = thrust::device_ptr< double >(xvel1);
-    thr_yvel1 = thrust::device_ptr< double >(yvel1);
-    thr_density0 = thrust::device_ptr< double >(density0);
-    thr_energy0 = thrust::device_ptr< double >(energy0);
-    thr_pressure = thrust::device_ptr< double >(pressure);
-    thr_soundspeed = thrust::device_ptr< double >(soundspeed);
 
     CUDA_ARRAY_ALLOC(dev_left_send_buffer, sizeof(double)*(y_max+5)*2);
     CUDA_ARRAY_ALLOC(dev_right_send_buffer, sizeof(double)*(y_max+5)*2);

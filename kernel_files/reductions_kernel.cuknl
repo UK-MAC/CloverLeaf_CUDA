@@ -1,0 +1,40 @@
+
+#include <float.h>
+
+enum REDUCTION_TYPE { RED_SUM, RED_MAX, RED_MIN };
+
+inline __device__ double sum_default(double* default_val) { return 0.0; }
+inline __device__ int sum_default(int* default_val) { return 0; }
+
+inline __device__ double max_default(double* default_val) { return -DBL_MAX; }
+inline __device__ int max_default(int* default_val) { return INT_MIN; }
+
+inline __device__ double min_default(double* default_val) { return DBL_MAX; }
+inline __device__ int min_default(int* default_val) { return INT_MAX; }
+
+template<typename T, REDUCTION_TYPE reduction_type>
+__global__ void reduction
+(const int n,
+       T* buffer)
+{
+    __shared__ T buffer_shared[BLOCK_SZ];
+
+    const int gid = threadIdx.x+blockIdx.x*blockDim.x;
+    //deafult_val is used to overload the default function to get correct data type
+    T default_val;
+    switch(reduction_type)
+    {
+        case RED_SUM:
+            buffer_shared[threadIdx.x] = (gid < n) ? buffer[gid] : sum_default(&default_val);
+            Reduce<T, BLOCK_SZ/2>::run(buffer_shared, buffer, SUM);
+        break;
+        case RED_MAX:
+            buffer_shared[threadIdx.x] = (gid < n) ? buffer[gid] : max_default(&default_val);
+            Reduce<T, BLOCK_SZ/2>::run(buffer_shared, buffer, MAXIMUM);
+        break;
+        case RED_MIN:
+            buffer_shared[threadIdx.x] = (gid < n) ? buffer[gid] : min_default(&default_val);
+            Reduce<T, BLOCK_SZ/2>::run(buffer_shared, buffer, MINIMUM);
+        break;
+    }
+}

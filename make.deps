@@ -9,13 +9,15 @@ advec_mom_kernel_cuda.o: advec_mom_kernel_cuda.cu cuda_common.hpp \
  kernel_files/advec_mom_kernel.cuknl
 calc_dt_kernel_cuda.o: calc_dt_kernel_cuda.cu cuda_common.hpp \
  kernel_files/cuda_kernel_header.hpp kernel_files/../ftocmacros.h \
- kernel_files/calc_dt_kernel.cuknl
+ kernel_files/calc_dt_kernel.cuknl  host_reductions_kernel_cuda.hpp \
+ kernel_files/reductions_kernel.cuknl value_getter.hpp
 cuda_errors.o: cuda_errors.cu cuda_common.hpp \
  kernel_files/cuda_kernel_header.hpp kernel_files/../ftocmacros.h
 cuda_strings.o: cuda_strings.cu cuda_strings.hpp
 field_summary_kernel_cuda.o: field_summary_kernel_cuda.cu cuda_common.hpp \
  kernel_files/cuda_kernel_header.hpp kernel_files/../ftocmacros.h \
- kernel_files/field_summary_kernel.cuknl
+ kernel_files/field_summary_kernel.cuknl  host_reductions_kernel_cuda.hpp \
+ kernel_files/reductions_kernel.cuknl
 flux_calc_kernel_cuda.o: flux_calc_kernel_cuda.cu cuda_common.hpp \
  kernel_files/cuda_kernel_header.hpp kernel_files/../ftocmacros.h \
  kernel_files/flux_calc_kernel.cuknl
@@ -36,7 +38,8 @@ pack_kernel_cuda.o: pack_kernel_cuda.cu cuda_common.hpp \
  kernel_files/pack_kernel.cuknl
 PdV_kernel_cuda.o: PdV_kernel_cuda.cu cuda_common.hpp \
  kernel_files/cuda_kernel_header.hpp kernel_files/../ftocmacros.h \
- kernel_files/PdV_kernel.cuknl
+ kernel_files/PdV_kernel.cuknl host_reductions_kernel_cuda.hpp \
+ kernel_files/reductions_kernel.cuknl
 reset_field_kernel_cuda.o: reset_field_kernel_cuda.cu cuda_common.hpp \
  kernel_files/cuda_kernel_header.hpp kernel_files/../ftocmacros.h \
  kernel_files/reset_field_kernel.cuknl

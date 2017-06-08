@@ -26,6 +26,8 @@
 
 #include "cuda_common.hpp"
 #include "kernel_files/calc_dt_kernel.cuknl"
+#include "host_reductions_kernel_cuda.hpp"
+#include "value_getter.hpp"
 
 extern "C" void calc_dt_kernel_cuda_
 (double* g_small,
@@ -64,13 +66,10 @@ int* small)
         volume, density0, viscosity, soundspeed, xvel0, yvel0,
         reduce_buf_1, reduce_buf_2);
 
-    // reduce_ptr 2 is a thrust wrapper around work_array_2
-    *dt_min_val = *thrust::min_element(reduce_ptr_2,
-                                       reduce_ptr_2 + num_blocks);
+    ReduceToHost<double>::min_element(reduce_buf_2, dt_min_val, num_blocks);
 
-    // ditto on reduce ptr 1
-    double jk_control = *thrust::max_element(reduce_ptr_1,
-                                             reduce_ptr_1 + num_blocks);
+    double jk_control;
+    ReduceToHost<double>::max_element(reduce_buf_1, &jk_control, num_blocks);
 
     *dtl_control = 10.01 * (jk_control - static_cast<int>(jk_control));
 
@@ -78,8 +77,8 @@ int* small)
     int tmp_jldt = *jldt = (static_cast<int>(jk_control)) % x_max;
     int tmp_kldt = *kldt = 1 + (jk_control/x_max);
 
-    *xl_pos = thr_cellx[tmp_jldt];
-    *yl_pos = thr_celly[tmp_kldt];
+    *xl_pos = Value_Getter<double>::from_device(cellx, tmp_jldt);
+    *yl_pos = Value_Getter<double>::from_device(celly, tmp_kldt);
 
     *small = (*dt_min_val < dtmin) ? 1 : 0;
 
@@ -87,22 +86,22 @@ int* small)
     {
         std::cerr << "Timestep information:" << std::endl;
         std::cerr << "j, k     : " << tmp_jldt << " " << tmp_kldt << std::endl;
-        std::cerr << "x, y     : " << thr_cellx[tmp_jldt] << " " << thr_celly[tmp_kldt] << std::endl;
+        std::cerr << "x, y     : " << Value_Getter<double>::from_device(cellx, tmp_jldt) << " " << Value_Getter<double>::from_device(celly, tmp_kldt) << std::endl;
         std::cerr << "timestep : " << *dt_min_val << std::endl;
         std::cerr << "Cell velocities;" << std::endl;
-        std::cerr << thr_xvel0[tmp_jldt  +(x_max+5)*tmp_kldt  ] << "\t";
-        std::cerr << thr_yvel0[tmp_jldt  +(x_max+5)*tmp_kldt  ] << std::endl;
-        std::cerr << thr_xvel0[tmp_jldt+1+(x_max+5)*tmp_kldt  ] << "\t";
-        std::cerr << thr_yvel0[tmp_jldt+1+(x_max+5)*tmp_kldt  ] << std::endl;
-        std::cerr << thr_xvel0[tmp_jldt+1+(x_max+5)*(tmp_kldt+1)] << "\t";
-        std::cerr << thr_yvel0[tmp_jldt+1+(x_max+5)*(tmp_kldt+1)] << std::endl;
-        std::cerr << thr_xvel0[tmp_jldt  +(x_max+5)*(tmp_kldt+1)] << "\t";
-        std::cerr << thr_yvel0[tmp_jldt  +(x_max+5)*(tmp_kldt+1)] << std::endl;
+        std::cerr << Value_Getter<double>::from_device(xvel0, tmp_jldt  +(x_max+5)*tmp_kldt  ) << "\t";
+        std::cerr << Value_Getter<double>::from_device(yvel0, tmp_jldt  +(x_max+5)*tmp_kldt  ) << std::endl;
+        std::cerr << Value_Getter<double>::from_device(xvel0, tmp_jldt+1+(x_max+5)*tmp_kldt  ) << "\t";
+        std::cerr << Value_Getter<double>::from_device(yvel0, tmp_jldt+1+(x_max+5)*tmp_kldt  ) << std::endl;
+        std::cerr << Value_Getter<double>::from_device(xvel0, tmp_jldt+1+(x_max+5)*(tmp_kldt+1)) << "\t";
+        std::cerr << Value_Getter<double>::from_device(yvel0, tmp_jldt+1+(x_max+5)*(tmp_kldt+1)) << std::endl;
+        std::cerr << Value_Getter<double>::from_device(xvel0, tmp_jldt  +(x_max+5)*(tmp_kldt+1)) << "\t";
+        std::cerr << Value_Getter<double>::from_device(yvel0, tmp_jldt  +(x_max+5)*(tmp_kldt+1)) << std::endl;
         std::cerr << "density, energy, pressure, soundspeed " << std::endl;
-        std::cerr << thr_density0[tmp_jldt+(x_max+5)*tmp_kldt] << "\t";
-        std::cerr << thr_energy0[tmp_jldt+(x_max+5)*tmp_kldt] << "\t";
-        std::cerr << thr_pressure[tmp_jldt+(x_max+5)*tmp_kldt] << "\t";
-        std::cerr << thr_soundspeed[tmp_jldt+(x_max+5)*tmp_kldt] << std::endl;
+        std::cerr << Value_Getter<double>::from_device(density0, tmp_jldt+(x_max+5)*tmp_kldt) << "\t";
+        std::cerr << Value_Getter<double>::from_device(energy0, tmp_jldt+(x_max+5)*tmp_kldt) << "\t";
+        std::cerr << Value_Getter<double>::from_device(pressure, tmp_jldt+(x_max+5)*tmp_kldt) << "\t";
+        std::cerr << Value_Getter<double>::from_device(soundspeed, tmp_jldt+(x_max+5)*tmp_kldt) << std::endl;
     }
 }
 
