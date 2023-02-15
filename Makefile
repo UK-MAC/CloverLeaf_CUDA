@@ -59,7 +59,7 @@ ifdef DEBUG
   FLAGS_SUN       = -O0 -xopenmp=noopt -g
   FLAGS_GNU       = -O0 -g
   FLAGS_CRAY      = -O0 -g -em -eD
-  FLAGS_PGI       = -O0 -g -C -Mchkstk -Ktrap=fp -Mchkfpstk -Mpreprocess
+  FLAGS_PGI       = -O0 -g -C -Mchkstk -Ktrap=fp -Mpreprocess #-Mchkfpstk -Mpreprocess
   FLAGS_PATHSCALE = -O0 -g
   FLAGS_XLF       = -O0 -g
   FLAGS_          = -O0 -g
@@ -87,6 +87,8 @@ CODE_GEN_KEPLER=-gencode arch=compute_35,code=sm_35
 CODE_GEN_KEPLER_CONSUMER=-gencode arch=compute_30,code=sm_30
 CODE_GEN_MAXWELL=-gencode arch=compute_50,code=sm_50
 CODE_GEN_PASCAL=-gencode arch=compute_60,code=sm_60
+CODE_GEN_VOLTA=-gencode arch=compute_70,code=sm_70
+CODE_GEN_AMPERE=-gencode arch=compute_80,code=sm_80
 
 LDLIBS+=-lstdc++ -lcudart
 
